@@ -22,4 +22,6 @@ class UserModel {
       'email': email,
     };
   }
+
+  static fromJson(user) {}
 }

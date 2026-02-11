@@ -1,44 +1,64 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../database_helper.dart';
 import '../models/user_model.dart';
+import '../providers/api_provider.dart';
 
 class UserRepository {
-  final dbHelper = DatabaseHelper.instance;
+  final DatabaseHelper dbHelper; // Tu clase de SQLite
+  final ApiProvider apiProvider; // Tu clase de conexión a la API
 
-  Future<List<UserModel>> getAndSyncUsers() async {
-    // 1. Intentar obtener usuarios de SQLite
-    final List<Map<String, dynamic>> localData = await dbHelper.getUsers();
+  UserRepository({required this.dbHelper, required this.apiProvider});
 
-    if (localData.isNotEmpty) {
-      print("Datos cargados desde SQLite");
-      return localData.map((m) => UserModel.fromMap(m)).toList();
-    } else {
-      // 2. Si la tabla está vacía, llamar al Backend
-      print("SQLite vacío, consultando API externa...");
-      
-      // CAMBIA ESTA URL por la de tu proyecto de CodeIgniter o Backend
-      final url = Uri.parse('https://tu-api.com/usuarios/get_all'); 
-      
-      try {
-        final response = await http.get(url);
+  // Busca específicamente en la tabla local
+  Future<UserModel?> getLocalUser(String username, String password) async {
+    return await dbHelper.getUser(username, password);
+  }
 
-        if (response.statusCode == 200) {
-          List<dynamic> remoteData = json.decode(response.body);
+  // Descarga los usuarios de la API y los inserta en la DB local
+  Future<void> fetchAndSaveUsersFromApi() async {
+    final List<UserModel> remoteUsers = await apiProvider.getUsersFromApi();
+    
+    // Guardamos cada usuario en SQLite (upsert)
+    for (var user in remoteUsers) {
+      await dbHelper.insertOrUpdateUser(user);
+    }
+  }
+
+  Future<String?> getTenantDomain(String email) async {
+    try {
+      // La URL de tu archivo PHP puro en el servidor central
+      final url = Uri.parse('https://infopae.com.co/api/check_tenant.php');
+
+      final response = await http.post(
+        url,
+        body: {'email': email}, // Enviamos el email por POST
+      );
+
+        print("**************************** response * ${response.body}");
+
+
+      if (response.statusCode == 200) {
+        print("**************************** response * ${response}");
+        final data = json.decode(response.body);
+        
+        if (data['status'] == 'success') {
+          final String dominio = data['dominio'];
           
-          // 3. Guardar en local para futuras consultas
-          for (var userMap in remoteData) {
-            await dbHelper.insertUser(userMap);
-          }
-
-          // Retornar la lista convertida a modelos
-          return remoteData.map((m) => UserModel.fromMap(m)).toList();
-        } else {
-          throw Exception("Error en el servidor: ${response.statusCode}");
+          // Guardamos el dominio de forma permanente
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('api_url', dominio);
+          
+          return dominio;
         }
-      } catch (e) {
-        throw Exception("Fallo en la conexión: $e");
       }
+      return null; // Si el usuario no existe o hay error
+    } catch (e) {
+      print("Error consultando el central: $e");
+      return null;
     }
   }
 }
+

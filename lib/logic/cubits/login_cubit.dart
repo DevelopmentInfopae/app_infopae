@@ -28,19 +28,37 @@ class LoginCubit extends Cubit<LoginState> {
 
     emit(LoginLoading());
     try {
-      // Aquí podrías validar contra la DB local o enviar al Repo
-      final users = await repository.getAndSyncUsers();
-      
-      // Lógica simple: verificar si el usuario existe en los datos sincronizados
-      bool exists = users.any((u) => u.username == username);
+      // Se necesita almacenar el dominio para el consumo de las api
+      String? domain = await repository.getTenantDomain(username);
+      print("******** domain ** ${domain} *****************");
 
-      if (exists) {
-        emit(LoginSuccess(users));
+      if (domain == null) {
+        emit(LoginError("No se encontró un contrato vinculado a este correo"));
+        return;
+      }
+
+      // 1. Intentamos buscar el usuario en la base de datos local
+      UserModel? user = await repository.getLocalUser(username, password);
+      if (user != null) {
+        emit(LoginSuccess([user])); // Usuario encontrado localmente
       } else {
-        emit(LoginError("Usuario no encontrado localmente"));
+        // 2. Si no existe local, disparamos la sincronización desde la API
+        print("Usuario no encontrado localmente. Sincronizando desde API...");
+        
+        // Esta función descarga los datos y los guarda en SQLite
+        await repository.fetchAndSaveUsersFromApi();
+
+        // 3. Reintentamos buscar localmente después de la descarga
+        UserModel? newUser = await repository.getLocalUser(username, password);
+
+        if (newUser != null) {
+          emit(LoginSuccess([newUser]));
+        } else {
+          emit(LoginError("Credenciales incorrectas o usuario no autorizado"));
+        }
       }
     } catch (e) {
-      emit(LoginError("Error: ${e.toString()}"));
+      emit(LoginError("Error de conexión o base de datos: ${e.toString()}"));
     }
   }
 }

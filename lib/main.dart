@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:get_it/get_it.dart';
+import 'data/database_helper.dart';
+import 'data/providers/api_provider.dart';
 import 'data/repositories/user_repository.dart';
 import 'logic/cubits/login_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,7 +13,18 @@ final sl = GetIt.instance; // sl = Service Locator
 
 void initInjections() {
   // Repositorios
-  sl.registerLazySingleton(() => UserRepository());
+  // 1. Proveedores de Datos (Las herramientas base)
+  sl.registerLazySingleton(() => DatabaseHelper.instance); // Usando el .instance que ya tienes
+  sl.registerLazySingleton(() => ApiProvider());
+
+  // 2. Repositorios (Le pasamos lo que necesita usando sl())
+  sl.registerLazySingleton(() => UserRepository(
+    dbHelper: sl<DatabaseHelper>(), // GetIt busca automáticamente el dbHelper registrado arriba
+    apiProvider: sl<ApiProvider>(), // GetIt busca el apiProvider
+  ));
+
+  // 3. Cubits
+  sl.registerFactory(() => LoginCubit(sl<UserRepository>()));
 }
 
 void main() async {
