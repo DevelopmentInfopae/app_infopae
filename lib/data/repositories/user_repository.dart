@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database_helper.dart';
@@ -20,7 +19,6 @@ class UserRepository {
   // Descarga los usuarios de la API y los inserta en la DB local
   Future<void> fetchAndSaveUsersFromApi() async {
     final List<UserModel> remoteUsers = await apiProvider.getUsersFromApi();
-    
     // Guardamos cada usuario en SQLite (upsert)
     for (var user in remoteUsers) {
       await dbHelper.insertOrUpdateUser(user);
@@ -37,11 +35,7 @@ class UserRepository {
         body: {'email': email}, // Enviamos el email por POST
       );
 
-        print("**************************** response * ${response.body}");
-
-
       if (response.statusCode == 200) {
-        print("**************************** response * ${response}");
         final data = json.decode(response.body);
         
         if (data['status'] == 'success') {

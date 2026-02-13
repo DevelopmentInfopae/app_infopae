@@ -1,16 +1,26 @@
 class UserModel {
   final int? id;
-  final String username;
+  final String nombre;
+  final String clave;
+  final String? foto;
   final String email;
 
-  UserModel({this.id, required this.username, required this.email});
+  UserModel({
+    this.id,
+    required this.nombre,
+    required this.clave,
+    this.foto,
+    required this.email,
+  });
 
   // Convertir de JSON (API) o Map (SQLite) a Objeto
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      id: map['id'],
-      username: map['username'],
-      email: map['email'],
+      id: map['id'] is int ? map['id'] : int.tryParse(map['id'].toString()),
+      nombre: map['nombre'] ?? '',
+      clave: map['clave'] ?? '',
+      foto: map['foto'], // Puede ser nulo
+      email: map['email'] ?? '',
     );
   }
 
@@ -18,10 +28,12 @@ class UserModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'username': username,
-      'email': email,
+      'nombre': nombre,
+      'clave': clave,
+      'foto' : foto,
+      'email' : email,
     };
   }
+ 
 
-  static fromJson(user) {}
 }

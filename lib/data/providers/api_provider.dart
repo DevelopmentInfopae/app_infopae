@@ -1,14 +1,23 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart'; // Importante
 import '../models/user_model.dart';
 
 class ApiProvider {
-  // Cambia esto por la IP de tu servidor o tu dominio
-  final String _baseUrl = "https://tu-dominio.com/api"; 
 
   Future<List<UserModel>> getUsersFromApi() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/usuarios'));
+      // 1. Obtener la instancia de shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      
+      // 2. Leer el dominio guardado (el mismo nombre que usaste en el Repository)
+      final String? baseUrl = prefs.getString('api_url');
+
+      // 3. Validar que el dominio exista
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("No se ha configurado un dominio de contrato.");
+      }
+      final response = await http.get(Uri.parse('$baseUrl/modules/api/get_users.php'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);

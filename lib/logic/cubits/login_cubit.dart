@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Definimos los estados posibles de la pantalla
 abstract class LoginState {}
@@ -28,18 +29,26 @@ class LoginCubit extends Cubit<LoginState> {
 
     emit(LoginLoading());
     try {
-      // Se necesita almacenar el dominio para el consumo de las api
-      String? domain = await repository.getTenantDomain(username);
-      print("******** domain ** ${domain} *****************");
+      final prefs = await SharedPreferences.getInstance();
+      // 1. Intentamos obtener el dominio guardado localmente
+      String? domain = prefs.getString('api_url');
+
+      // 2. Si NO existe (es la primera vez), lo buscamos en el servidor central
+      if (domain == null) {
+        print("--- Buscando dominio en el servidor central ---");
+        domain = await repository.getTenantDomain(username);
+      } 
 
       if (domain == null) {
         emit(LoginError("No se encontró un contrato vinculado a este correo"));
         return;
       }
 
-      // 1. Intentamos buscar el usuario en la base de datos local
+      // Llegados a este punto sabemos el dominio por ejemplo: https://infopaegiron.com/2026/demo/app
+      // 3. Intentamos buscar el usuario en la base de datos local
       UserModel? user = await repository.getLocalUser(username, password);
       if (user != null) {
+        // Sí, el usuario existe sigue el proceso emite un success
         emit(LoginSuccess([user])); // Usuario encontrado localmente
       } else {
         // 2. Si no existe local, disparamos la sincronización desde la API

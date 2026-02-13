@@ -30,9 +30,10 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY,
-        username TEXT NOT NULL,
-        email TEXT NOT NULL,
-        password TEXT NOT NULL default ""
+        nombre TEXT NOT NULL,
+        clave TEXT NOT NULL,
+        foto TEXT NULL,
+        email TEXT NOT NULL
       )
     ''');
   }
@@ -51,20 +52,17 @@ class DatabaseHelper {
 
   Future<UserModel?> getUser(String username, String password) async {
     final db = await instance.database;
-
-    // Buscamos un usuario que coincida con ambos campos
     final List<Map<String, dynamic>> maps = await db.query(
       'users', // Asegúrate de que el nombre de la tabla sea 'users' o 'usuarios'
-      where: 'username = ? AND password = ?',
+      where: 'nombre = ? AND clave = ?',
       whereArgs: [username, password],
     );
 
     if (maps.isNotEmpty) {
-      // Usamos .fromMap porque mencionaste que así se llama en tu modelo
       return UserModel.fromMap(maps.first);
     }
 
-    return null; // Si no lo encuentra, devuelve null
+    return null; 
   }
 
 
