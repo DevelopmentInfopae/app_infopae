@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../database_helper.dart';
 import '../models/user_model.dart';
 import '../providers/api_provider.dart';
+import 'dart:convert'; // Para utf8.encode
+import 'package:crypto/crypto.dart'; // Para sha1
 
 class UserRepository {
   final DatabaseHelper dbHelper; // Tu clase de SQLite
@@ -13,7 +15,14 @@ class UserRepository {
 
   // Busca específicamente en la tabla local
   Future<UserModel?> getLocalUser(String username, String password) async {
-    return await dbHelper.getUser(username, password);
+    final pass = encryptPassword(password);
+    return await dbHelper.getUser(username, pass);
+  }
+
+  String encryptPassword(String password) {
+    var bytes = utf8.encode(password); // Convierte el texto a bytes
+    var digest = sha1.convert(bytes);  // Genera el hash SHA-1
+    return digest.toString();          // Retorna el hash en String
   }
 
   // Descarga los usuarios de la API y los inserta en la DB local

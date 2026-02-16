@@ -20,6 +20,13 @@ class _LoginPageState extends State<LoginPage> {
   static const colorButton = 0xFF10b77f;
 
   @override
+  void initState() {
+    super.initState();
+    // Asignamos el valor al controller
+    _userController.text = "manipuladora@biometrica.com"; 
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(colorFondo),
@@ -130,7 +137,7 @@ class _LoginPageState extends State<LoginPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Ingreso Exitoso"), backgroundColor: Colors.green),
                           );
-                          // Aquí iría: Navigator.pushReplacementNamed(context, '/home');
+                          Navigator.pushReplacementNamed(context, '/home');
                         }
                       },
                       builder: (context, state) {

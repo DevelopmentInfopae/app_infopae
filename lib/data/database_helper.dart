@@ -1,3 +1,4 @@
+import 'package:app_infopae/data/models/sedes_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -36,6 +37,16 @@ class DatabaseHelper {
         email TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE sedes (
+        id INTEGER PRIMARY KEY,
+        cod_inst TEXT NOT NULL,
+        nom_inst TEXT NOT NULL,
+        cod_sede TEXT NULL,
+        nom_sede TEXT NOT NULL
+      )
+    ''');
   }
 
   // Método para insertar usuarios masivamente
@@ -54,17 +65,14 @@ class DatabaseHelper {
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'users', // Asegúrate de que el nombre de la tabla sea 'users' o 'usuarios'
-      where: 'nombre = ? AND clave = ?',
+      where: 'email = ? AND clave = ?',
       whereArgs: [username, password],
     );
-
     if (maps.isNotEmpty) {
       return UserModel.fromMap(maps.first);
     }
-
     return null; 
   }
-
 
   Future<void> insertOrUpdateUser(UserModel user) async {
     final db = await instance.database;
@@ -74,5 +82,23 @@ class DatabaseHelper {
       user.toMap(), // Convertimos el objeto a Map para guardarlo
       conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
+  }
+
+  // insertar o actualizar las sedes 
+  Future<void> insertOrUpdateSede(SedesModel sede) async {
+    final db = await instance.database;
+
+    await db.insert(
+      'sedes',
+      sede.toMap(), // Convertimos el objeto a Map para guardarlo
+      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+    );
+  }
+
+  Future<void> allSedes() async {
+    final db = await instance.database;
+
+   final result = await db.rawQuery('SELECT * FROM sedes');
+   print('result ${result}');
   }
 }

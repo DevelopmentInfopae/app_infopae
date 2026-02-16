@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
@@ -49,6 +51,10 @@ class LoginCubit extends Cubit<LoginState> {
       UserModel? user = await repository.getLocalUser(username, password);
       if (user != null) {
         // Sí, el usuario existe sigue el proceso emite un success
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_nombre', user.nombre);
+        await prefs.setString('user_foto', user.foto ?? '');
+        await prefs.setString('user_id', user.id.toString());
         emit(LoginSuccess([user])); // Usuario encontrado localmente
       } else {
         // 2. Si no existe local, disparamos la sincronización desde la API
@@ -59,8 +65,13 @@ class LoginCubit extends Cubit<LoginState> {
 
         // 3. Reintentamos buscar localmente después de la descarga
         UserModel? newUser = await repository.getLocalUser(username, password);
+        print("*********************************new user**** ${newUser?.nombre}");
 
         if (newUser != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_nombre', newUser.nombre);
+          await prefs.setString('user_foto', newUser.foto ?? '');
+          await prefs.setString('user_id', newUser.id.toString());
           emit(LoginSuccess([newUser]));
         } else {
           emit(LoginError("Credenciales incorrectas o usuario no autorizado"));
