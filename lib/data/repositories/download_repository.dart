@@ -1,6 +1,7 @@
 import 'package:app_infopae/data/models/sedes_model.dart';
 
 import '../database_helper.dart';
+import '../models/beneficiario_model.dart';
 import '../providers/api_provider.dart';
 
 class DownloadRepository {
@@ -10,7 +11,13 @@ class DownloadRepository {
   DownloadRepository({required this.apiProvider, required this.dbHelper});
 
   Future<void> descargarBeneficiarios() async {
-    // Tu lógica de conexión a la API y guardado en DB
+    final List<BeneficiarioModel> remoteBeneficiarios = await apiProvider.getBeneficiariosFromApi();
+
+    for (var beneficiario in remoteBeneficiarios) {
+      await dbHelper.insertOrUpdateBeneficiario(beneficiario);
+    }
+
+    await dbHelper.allBeneficiarios();
   }
 
   Future<void> descargarSedes() async {

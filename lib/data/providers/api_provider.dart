@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:app_infopae/data/models/beneficiario_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Importante
 import '../models/sedes_model.dart';
@@ -55,6 +56,37 @@ class ApiProvider {
         List<dynamic> data = json.decode(response.body);
 
         return data.map((sede) => SedesModel.fromMap(sede)).toList();
+      }else {
+        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+      }
+
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<List<BeneficiarioModel>> getBeneficiariosFromApi() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? baseUrl = prefs.getString('api_url');
+      final String? id = prefs.getString('user_id');
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("No se ha configurado un dominio de contrato.");
+      }
+
+      final uri = Uri.parse('$baseUrl/modules/api/get_beneficiarios.php').replace(
+        queryParameters: {
+          'id': id,
+        },
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+
+        return data.map((sede) => BeneficiarioModel.fromMap(sede)).toList();
       }else {
         throw Exception("Error al conectar con el servidor: ${response.statusCode}");
       }

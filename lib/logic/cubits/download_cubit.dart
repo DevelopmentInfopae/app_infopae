@@ -40,19 +40,19 @@ class DownloadCubit extends Cubit<DownloadState> {
 
       // --- ETAPA 2: Listado de Estudiantes ---
       // Aquí llamarías a: await repository.descargarEstudiantes();
-      await Future.delayed(const Duration(seconds: 2)); // Simulación (pesa más)
+      // await Future.delayed(const Duration(seconds: 2)); // Simulación (pesa más)
+      await repository.descargarBeneficiarios();
       emit(DownloadInProgress(0.66));
 
       // --- ETAPA 3: Cupos de raciones ---
       // Aquí llamarías a: await repository.descargarCupos();
-      await Future.delayed(const Duration(seconds: 1)); // Simulación
-      
+     
       // 2. Éxito Final: 100%
       emit(DownloadSuccess());
       
     } catch (e, stack) {
       print("💥 ERROR REAL: $e");
-  print(stack);
+      print(stack);
       emit(DownloadFailure("Error en la descarga: ${e.toString()}"));
     }
   }

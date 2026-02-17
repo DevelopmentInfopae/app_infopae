@@ -1,3 +1,4 @@
+import 'package:app_infopae/data/models/beneficiario_model.dart';
 import 'package:app_infopae/data/models/sedes_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -45,6 +46,20 @@ class DatabaseHelper {
         nom_inst TEXT NOT NULL,
         cod_sede TEXT NULL,
         nom_sede TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE benefiarios (
+        id INTEGER PRIMARY KEY,
+        nom1 TEXT NOT NULL,
+        nom2 TEXT NOT NULL,
+        ape1 TEXT NULL,
+        ape2 TEXT NOT NULL,
+        cod_sede TEXT NOT NULL,
+        cod_grado TEXT NOT NULL,
+        nom_grupo TEXT NOT NULL,
+        tipo_complemento TEXT NOT NULL
       )
     ''');
   }
@@ -98,7 +113,23 @@ class DatabaseHelper {
   Future<void> allSedes() async {
     final db = await instance.database;
 
-   final result = await db.rawQuery('SELECT * FROM sedes');
-   print('result ${result}');
+    final result = await db.rawQuery('SELECT * FROM sedes');
+  }
+
+  Future<void> insertOrUpdateBeneficiario(BeneficiarioModel beneficiario) async {
+    final db = await instance.database;
+
+    await db.insert(
+      'benefiarios',
+      beneficiario.toMap(), // Convertimos el objeto a Map para guardarlo
+      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+    );
+  }
+
+  Future<void> allBeneficiarios() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery('SELECT * FROM benefiarios');
+    print('********************** result ${result}');
   }
 }
