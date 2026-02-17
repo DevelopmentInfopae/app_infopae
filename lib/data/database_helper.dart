@@ -1,4 +1,5 @@
 import 'package:app_infopae/data/models/beneficiario_model.dart';
+import 'package:app_infopae/data/models/priorizacion_model.dart';
 import 'package:app_infopae/data/models/sedes_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -60,6 +61,18 @@ class DatabaseHelper {
         cod_grado TEXT NOT NULL,
         nom_grupo TEXT NOT NULL,
         tipo_complemento TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE priorizacion (
+        id INTEGER PRIMARY KEY,
+        cod_sede TEXT NOT NULL,
+        aps TEXT NOT NULL,
+        cajmps TEXT NULL,
+        cajtps TEXT NOT NULL,
+        cajmri TEXT NOT NULL,
+        cajtri TEXT NOT NULL
       )
     ''');
   }
@@ -130,6 +143,24 @@ class DatabaseHelper {
     final db = await instance.database;
 
     final result = await db.rawQuery('SELECT * FROM benefiarios');
-    print('********************** result ${result}');
   }
+
+  Future<void> insertOrUpdatePriorizacion(PriorizacionModel priorizacion) async {
+    final db = await instance.database;
+
+    await db.insert(
+      'priorizacion',
+      priorizacion.toMap(), // Convertimos el objeto a Map para guardarlo
+      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+    );
+  }
+
+  Future<void> allPriorizacion() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery('SELECT * FROM priorizacion');
+
+  }
+
+
 }

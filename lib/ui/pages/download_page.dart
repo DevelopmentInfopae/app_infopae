@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/cubits/download_cubit.dart';
+// ... tus otros imports
 
 class DownloadPage extends StatelessWidget {
   const DownloadPage({super.key});
@@ -8,80 +9,65 @@ class DownloadPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80.0),
-        child: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: const Color(0xFF1a242e),
-          // Eliminamos el espaciado interno por defecto para tener control total
-          toolbarHeight: 80, 
-          title: Container(
-            height: 80, // Forzamos la altura del contenedor del título
-            alignment: Alignment.centerLeft, // Centrado vertical, alineado a la izquierda
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // ESTO centra verticalmente
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: _buildAppBar(), // Moví el AppBar a una función para limpiar el build
+      body: BlocListener<DownloadCubit, DownloadState>(
+        // El listener escucha cambios y ejecuta la navegación
+        listener: (context, state) {
+          if (state is DownloadSuccess) {
+            // Mostramos un mensaje breve antes de irnos (opcional)
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('¡Sincronización finalizada!'), backgroundColor: Color(0XFF18a34c)),
+            );
+            
+            // Redirección a Home
+            // Usamos pushReplacementNamed para que no pueda volver a la carga con el botón físico
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        },
+        child: BlocBuilder<DownloadCubit, DownloadState>(
+          builder: (context, state) {
+            double globalProgress = 0.0;
+            if (state is DownloadInProgress) globalProgress = state.progress;
+            if (state is DownloadSuccess) globalProgress = 1.0;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                children: [
+                  _buildMainActionCard(context, state, globalProgress),
+                  const SizedBox(height: 20),
+                  _buildDetailsCard(state),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // Tu AppBar actual (limpiado para legibilidad)
+  PreferredSize _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(80.0),
+      child: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: const Color(0xFF1a242e),
+        toolbarHeight: 80,
+        title: Container(
+          height: 80,
+          alignment: Alignment.centerLeft,
+          child: RichText(
+            text: const TextSpan(
               children: [
-                RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '@Info',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 26, // Bajé un poco de 30 para que no se vea tan apretado
-                        ),
-                      ),
-                      TextSpan(
-                        text: 'PAE',
-                        style: TextStyle(
-                          color: Color(0XFF18a34c),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 21,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' - Descarga Información',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                TextSpan(text: '@Info', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 26)),
+                TextSpan(text: 'PAE', style: TextStyle(color: Color(0XFF18a34c), fontWeight: FontWeight.bold, fontSize: 21)),
+                TextSpan(text: ' - Descarga Información', style: TextStyle(color: Colors.white70, fontSize: 16)),
               ],
             ),
           ),
-          
         ),
       ),
-      body: BlocBuilder<DownloadCubit, DownloadState>(
-        builder: (context, state) {
-          // Valores por defecto
-          double globalProgress = 0.0;
-          if (state is DownloadInProgress) globalProgress = state.progress;
-          if (state is DownloadSuccess) globalProgress = 1.0;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                // PRIMER CONTENEDOR: ACCIÓN Y PROGRESO GLOBAL
-                _buildMainActionCard(context, state, globalProgress),
-                
-                const SizedBox(height: 20),
-                
-                // SEGUNDO CONTENEDOR: DETALLE DE DESCARGA
-                _buildDetailsCard(state),
-              ],
-            ),
-          );
-        },
-      ),
-    
     );
   }
 }

@@ -46,7 +46,7 @@ class DownloadCubit extends Cubit<DownloadState> {
 
       // --- ETAPA 3: Cupos de raciones ---
       // Aquí llamarías a: await repository.descargarCupos();
-     
+      await repository.descargarPriorizacion();
       // 2. Éxito Final: 100%
       emit(DownloadSuccess());
       
