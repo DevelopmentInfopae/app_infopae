@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../logic/cubits/asistencia_cubit.dart';
 
 class ListaEstudiantesWidget extends StatelessWidget {
   final List<dynamic> estudiantes;
@@ -42,24 +45,55 @@ class ListaEstudiantesWidget extends StatelessWidget {
                   children: dias.map((dia) {
                     // Tomamos la inicial del día
                     final String nomDia = dia['nomDia'][0].toUpperCase();
-
+                    final marked = context.read<AsistenciaCubit>().todosMarcados(dia['dia']);
                     return GestureDetector(
                       onTap: () {
-                        /// 🚀 LLAMA A TU CALLBACK PARA MARCAR TODOS
-                        onCheckTapped("TODOS", dia);
+
+                        final marcadoAhora = context.read<AsistenciaCubit>().todosMarcados(dia['dia']);
+
+  if (marcadoAhora) {
+    onCheckTapped("DESMARCAR_TODOS", dia);
+    context.read<AsistenciaCubit>().desmarcarTodos(dia['dia']);
+  } else {
+    onCheckTapped("MARCAR_TODOS", dia);
+    context.read<AsistenciaCubit>().marcarTodos(dia['dia']);
+  }
+                        // onCheckTapped(action, dia);
                       },
                       child: Container(
                         width: 24,
                         margin: const EdgeInsets.only(left: 6),
-                        child: Center(
-                          child: Text(
-                            nomDia,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0XFF18a34c),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              nomDia,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0XFF18a34c),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 2),
+                            Container(
+                              margin: const EdgeInsets.only(left: 1),
+                              width: 24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: marked ? const Color(0XFF18a34c) : Colors.grey.shade300,
+                                  width: 1.5,
+                                ),
+                                color: marked ? const Color(0XFF18a34c).withOpacity(0.1) : Colors.transparent,
+                              ),
+                              child: Icon(
+                                Icons.check,
+                                size: 14,
+                                color:  marked ? const Color(0XFF18a34c) : Colors.transparent,
+                              ),
+                            ),
+                          ]
                         ),
                       ),
                     );
@@ -117,33 +151,26 @@ class ListaEstudiantesWidget extends StatelessWidget {
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () => onCheckTapped(e, dia), // Notificamos el click
-
-
-
-
-
-
-
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        width: 24, // Lo hacemos un poco más grande para que sea fácil de tocar
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: asistio ? const Color(0XFF18a34c) : Colors.grey.shade300,
-                            width: 1.5,
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          width: 24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: asistio ? const Color(0XFF18a34c) : Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                            color: asistio ? const Color(0XFF18a34c).withOpacity(0.1) : Colors.transparent,
                           ),
-                          color: asistio ? const Color(0XFF18a34c).withOpacity(0.1) : Colors.transparent,
+                          child: Icon(
+                            Icons.check,
+                            size: 14,
+                            color: asistio ? const Color(0XFF18a34c) : Colors.transparent,
+                          ),
                         ),
-                        child: Icon(
-                          Icons.check,
-                          size: 14,
-                          color: asistio ? const Color(0XFF18a34c) : Colors.transparent,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
                   ),
                 ),
                 onTap: () {

@@ -12,6 +12,7 @@ class AsistenciaState {
   final List<Map<String, dynamic>> complementos;
   final List<dynamic> estudiantes;
   final List<dynamic> dias;
+  final Map<String, bool> diasMarcados; 
   final String? errorMessage;
 
   AsistenciaState({
@@ -23,6 +24,7 @@ class AsistenciaState {
     this.complementos = const[],
     this.estudiantes = const [],
     this.dias = const [],
+    this.diasMarcados = const{},
 
     this.errorMessage,
   });
@@ -37,6 +39,7 @@ class AsistenciaState {
     List<Map<String, dynamic>>? complementos,
     List<dynamic>? estudiantes,
     List<dynamic>? dias,
+    Map<String, bool>? diasMarcados,
     String? errorMessage,
   }) {
     return AsistenciaState(
@@ -48,6 +51,7 @@ class AsistenciaState {
       complementos: complementos ?? this.complementos,
       estudiantes: estudiantes ?? this.estudiantes,
       dias: dias ?? this.dias,
+      diasMarcados: diasMarcados ?? this.diasMarcados,
       errorMessage: errorMessage,
     );
   }
@@ -143,6 +147,65 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
   }
 
   Future<void> toggleAsistencia( e, dia ) async {
+    print("eeeeeeeeeeeeeee $e");
+    // return;
+    final String diaKey = dia['dia'].toString();
+
+    /// ─────────────────────────────────────────
+    /// 🚀 SI ES "TODOS" MARCAMOS TODOS LOS ESTUDIANTES
+    /// ─────────────────────────────────────────
+    if (e == "MARCAR_TODOS") {
+      final nuevosEstudiantes = state.estudiantes.map((est) {
+        final actualizado = Map<String, dynamic>.from(est);
+        actualizado[diaKey] = 1; // marcar todo
+        return actualizado;
+      }).toList();
+
+      emit(state.copyWith(estudiantes: nuevosEstudiantes));
+
+      // Guardar en DB uno por uno
+      for (var est in state.estudiantes) {
+        await repository.updateAsistenciaLocal(
+          est['tipo_doc'],
+          est['num_doc'],
+          est['tipo_complemento'],
+          dia['mes'],
+          dia['semana'],
+          dia['dia'],
+          1
+        );
+      }
+      return;
+    }
+
+    // DESMARCAR TODOS
+    if (e == "DESMARCAR_TODOS") {
+      final nuevosEstudiantes = state.estudiantes.map((est) {
+        final actualizado = Map<String, dynamic>.from(est);
+        actualizado[diaKey] = 0; // marcar todo
+        return actualizado;
+      }).toList();
+
+      emit(state.copyWith(estudiantes: nuevosEstudiantes));
+
+      // Guardar en DB uno por uno
+      for (var est in state.estudiantes) {
+        await repository.updateAsistenciaLocal(
+          est['tipo_doc'],
+          est['num_doc'],
+          est['tipo_complemento'],
+          dia['mes'],
+          dia['semana'],
+          dia['dia'],
+          1
+        );
+      }
+      return;
+    }
+
+    /// ─────────────────────────────────────────
+    /// 🧍‍♂️ CASO NORMAL: UN SOLO ESTUDIANTE
+    /// ─────────────────────────────────────────
     int asistio;
     if (e[dia['dia']] == 0) {
       asistio = 1;
@@ -165,4 +228,32 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
     await repository.updateAsistenciaLocal(e['tipo_doc'], e['num_doc'], e['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], asistio);  
   }
+
+  void marcarTodos(String dia) {
+    final nuevosDias = Map<String, bool>.from(state.diasMarcados);
+    nuevosDias[dia] = true;
+    emit(state.copyWith(
+      diasMarcados: nuevosDias,
+    ));
+  }
+
+  void desmarcarTodos(String dia) {
+    final nuevosDias = Map<String, bool>.from(state.diasMarcados);
+    nuevosDias[dia] = false;
+    emit(state.copyWith(
+      diasMarcados: nuevosDias,
+    ));
+  }
+
+  bool todosMarcados(String dia) {
+    if (state.estudiantes.isEmpty) return false;
+
+    for (final b in state.estudiantes) {
+      final valor = b[dia] ?? 0;
+      if (valor == 0) return false; // si uno no está marcado → NO están todos marcados
+    }
+
+    return true;
+  }
+
 }
