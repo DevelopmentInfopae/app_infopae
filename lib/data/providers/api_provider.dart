@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:app_infopae/data/models/beneficiario_model.dart';
+import 'package:app_infopae/data/models/calendar_model.dart';
 import 'package:app_infopae/data/models/priorizacion_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart'; // Importante
@@ -113,11 +114,7 @@ class ApiProvider {
         },
       );
 
-      print("uri ************** ${uri}");
-
       final response = await http.get(uri);
-
-      print("response priorizacion ${response.body}");
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
@@ -131,4 +128,31 @@ class ApiProvider {
       throw Exception(e.toString());
     }
   } 
+
+  Future<List<CalendarModel>> getCalendarFromApi() async{
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? baseUrl = prefs.getString('api_url');
+      final String? id = prefs.getString('user_id');
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("No se ha configurado un dominio de contrato.");
+      }
+
+      final uri = Uri.parse('$baseUrl/modules/api/get_calendar.php');
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+
+        return data.map((calendar) => CalendarModel.fromMap(calendar)).toList();
+      }else {
+        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+      }
+
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
 }

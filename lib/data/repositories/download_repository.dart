@@ -3,6 +3,7 @@ import 'package:app_infopae/data/models/sedes_model.dart';
 import '../database_helper.dart';
 import '../models/beneficiario_model.dart';
 import '../models/priorizacion_model.dart';
+import '../models/calendar_model.dart';
 import '../providers/api_provider.dart';
 
 class DownloadRepository {
@@ -29,6 +30,15 @@ class DownloadRepository {
     final List<PriorizacionModel> remotePriorizaciones = await apiProvider.getPriorizacionFromApi();
     for (var priorizacion in remotePriorizaciones) {
       await dbHelper.insertOrUpdatePriorizacion(priorizacion);
+    }
+  }
+
+  Future<void> descargarCalendario() async {
+    final List<CalendarModel> remoteCalendar = await apiProvider.getCalendarFromApi();
+    for (var calendar in remoteCalendar) {
+      // aca en cadía día hacer la inserción en asistencia det
+      await dbHelper.insertOrUpdateCalendar(calendar);
+      await dbHelper.insertOrUpdateAsistenciaDet(calendar);
     }
   }
 }

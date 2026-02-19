@@ -1,6 +1,8 @@
 import 'package:app_infopae/data/models/beneficiario_model.dart';
+import 'package:app_infopae/data/models/calendar_model.dart';
 import 'package:app_infopae/data/models/priorizacion_model.dart';
 import 'package:app_infopae/data/models/sedes_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -51,12 +53,15 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
-      CREATE TABLE benefiarios (
+      CREATE TABLE beneficiarios (
         id INTEGER PRIMARY KEY,
+        tipo_doc TEXT NOT NULL,
+        num_doc TEXT NOT NULL,
         nom1 TEXT NOT NULL,
         nom2 TEXT NOT NULL,
         ape1 TEXT NULL,
         ape2 TEXT NOT NULL,
+        cod_inst TEXT NOT NULL,
         cod_sede TEXT NOT NULL,
         cod_grado TEXT NOT NULL,
         nom_grupo TEXT NOT NULL,
@@ -75,6 +80,35 @@ class DatabaseHelper {
         cajtri TEXT NOT NULL
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE calendar (
+        id INTEGER PRIMARY KEY,
+        mes TEXT NOT NULL,
+        semana TEXT NOT NULL,
+        dia TEXT NULL,
+        nomDia TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE asistencia_det (
+        id INTEGER PRIMARY KEY,
+        tipo_doc TEXT NOT NULL,
+        num_doc TEXT NOT NULL,
+        dia TEXT NOT NULL,
+        semana TEXT NOT NULL,
+        mes TEXT NOT NULL,
+        complemento TEXT NOT NULL,
+        id_usuario INTEGER NOT NULL DEFAULT 0,
+        asistencia INTEGER DEFAULT 0,
+        repite INTEGER DEFAULT 0,
+        consumio INTEGER DEFAULT 0,
+        repitio INTEGER DEFAULT 0
+      )
+    ''');
+
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_asistencia_doc_dia ON asistencia_det (num_doc, dia);');
   }
 
   // Método para insertar usuarios masivamente
@@ -133,7 +167,7 @@ class DatabaseHelper {
     final db = await instance.database;
 
     await db.insert(
-      'benefiarios',
+      'beneficiarios',
       beneficiario.toMap(), // Convertimos el objeto a Map para guardarlo
       conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
@@ -162,5 +196,70 @@ class DatabaseHelper {
 
   }
 
+  Future<void> insertOrUpdateCalendar(CalendarModel calendar) async {
+    final db = await instance.database;
+
+    await db.insert(
+      'calendar',
+      calendar.toMap(), // Convertimos el objeto a Map para guardarlo
+      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+    );
+  }
+
+  Future<void> allCalendar() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery('SELECT * FROM calendar');
+
+  }
+
+  Future<void> insertOrUpdateAsistenciaDet( CalendarModel calendar ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('user_id');
+    final db = await instance.database;
+    final List<Map<String, dynamic>> beneficiarios = await db.query('beneficiarios');
+
+    if (beneficiarios.isEmpty) return;
+    final batch = db.batch();
+
+    for (var beneficiario in beneficiarios) {
+      batch.insert(
+        'asistencia_det',
+        {
+          'tipo_doc' : beneficiario['tipo_doc'],
+          'num_doc' : beneficiario['num_doc'],
+          'dia': calendar.dia, 
+          'semana' : calendar.semana,
+          'mes' : calendar.mes,
+          'complemento' : beneficiario['tipo_complemento'],
+          'id_usuario' : userId,
+          'asistencia' : 0,
+          'repite' : 0,
+          'consumio': 0,
+          'repitio': 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore, 
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> allAsistencia() async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '1096540682'");
+
+    print("***************** $result");
+
+  }
+
+  Future<void> getAsistenceByDoc(String numDoc) async {
+    final db = await instance.database;
+
+    final result = await db.rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '$numDoc' ");
+
+    print("***************** $result");
+
+  }
 
 }

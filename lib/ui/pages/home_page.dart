@@ -153,7 +153,7 @@ class _HomePageState extends State<HomePage> {
               subtitle : "Registra la presencia de los beneficiarios en el comedor.",
               icon : Icons.how_to_reg_rounded,
               color : const Color(0XFF18a34c),
-              onTap: () => Navigator.pushNamed(context, '/download'),
+              onTap: () => Navigator.pushNamed(context, '/asistencia'),
             ),
             _buildFeatureCard(
               title : "Consultar Reportes",

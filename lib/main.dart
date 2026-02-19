@@ -1,4 +1,7 @@
+import 'package:app_infopae/data/repositories/asistencia_repository.dart';
+import 'package:app_infopae/logic/cubits/asistencia_cubit.dart';
 import 'package:app_infopae/logic/cubits/download_cubit.dart';
+import 'package:app_infopae/ui/pages/asistence_page.dart';
 import 'package:app_infopae/ui/pages/download_page.dart';
 import 'package:app_infopae/ui/pages/login_page.dart';
 import 'package:app_infopae/ui/pages/home_page.dart';
@@ -26,8 +29,13 @@ void initInjections() {
     dbHelper: sl<DatabaseHelper>(), // GetIt busca automáticamente el dbHelper registrado arriba
     apiProvider: sl<ApiProvider>(), // GetIt busca el apiProvider
   ));
-  // REGISTRA EL NUEVO REPOSITORIO AQUÍ
+
   sl.registerLazySingleton(() => DownloadRepository(
+    apiProvider: sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
+    dbHelper: sl(),
+  ));
+
+  sl.registerLazySingleton(() => AsistenciaRepository(
     apiProvider: sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
     dbHelper: sl(),
   ));
@@ -35,6 +43,7 @@ void initInjections() {
   // 3. Cubits
   sl.registerFactory(() => LoginCubit(sl<UserRepository>()));
   sl.registerFactory(() => DownloadCubit(sl<DownloadRepository>()));
+  sl.registerFactory(() => AsistenciaCubit(sl<AsistenciaRepository>()));
 }
 
 void main() async {
@@ -67,6 +76,10 @@ class MyApp extends StatelessWidget {
         '/download': (context) => BlocProvider(
               create: (_) => sl<DownloadCubit>(),
               child: const DownloadPage(),
+            ),
+        '/asistencia': (context) => BlocProvider(
+              create: (_) => sl<AsistenciaCubit>(),
+              child: const AsistenciaPage(),
             ),
       },
     );
