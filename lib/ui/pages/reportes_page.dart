@@ -1,7 +1,6 @@
+import 'package:app_infopae/logic/cubits/reportes_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../logic/cubits/download_cubit.dart';
 
 class ReportesPage extends StatelessWidget {
   const ReportesPage({super.key});
@@ -9,58 +8,136 @@ class ReportesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Sincronización")),
-      body: BlocConsumer<DownloadCubit, DownloadState>(
-        listener: (context, state) {
-          if (state is DownloadSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("¡Datos actualizados!"), backgroundColor: Colors.green),
+      appBar: _buildAppBar(),
+      body: BlocBuilder<ReportesCubit, ReportesState>(
+        builder: (context, state) {
+          final sedes = state.sedes;
+
+          if (state.isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Color(0XFF18a34c),
+                strokeWidth: 3,
+              ),
             );
           }
-        },
-        builder: (context, state) {
-          return Padding(
-            padding: const EdgeInsets.all(30.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.cloud_download_rounded, size: 80, color: Color(0XFF18a34c)),
-                const SizedBox(height: 20),
-                const Text(
-                  "Descargando Información",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "Espere mientras actualizamos el listado de beneficiarios y cupos.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 40),
-                
-                // BARRA DE CARGA
-                if (state is DownloadInProgress) ...[
-                  LinearProgressIndicator(
-                    value: state.progress,
-                    backgroundColor: Colors.grey[200],
-                    color: const Color(0XFF18a34c),
-                    minHeight: 10,
-                  ),
-                  const SizedBox(height: 10),
-                  Text("${(state.progress * 100).toInt()}%"),
-                ],
 
-                if (state is DownloadInitial || state is DownloadFailure)
-                  ElevatedButton.icon(
-                    onPressed: () => context.read<DownloadCubit>().iniciarDescarga(),
-                    icon: const Icon(Icons.sync),
-                    label: const Text("Iniciar Descarga"),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0XFF18a34c)),
+          if (sedes.isEmpty) {
+            return const Center(child: Text("No hay sedes disponibles"));
+          }
+
+          return ListView.builder(
+            itemCount: sedes.length,
+            itemBuilder: (_, index) {
+              final sede = sedes[index];
+              final grupos = sede['grupos'] as List<dynamic>;
+
+              return Card(
+                margin: const EdgeInsets.all(12),
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sede['sede'],
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...grupos.map((grupo) {
+                        final dias = grupo['dias'] as List<dynamic>;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                grupo['grupo'],
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              // Lista de días
+                              ...dias.map((d) {
+                                final confirmado = d['confirmado'] == true;
+
+                                return Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      d['dia'],
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Icon(
+                                      confirmado
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
+                                      color: confirmado
+                                          ? Colors.green
+                                          : Colors.red,
+                                      size: 26,
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              );
+            },
           );
         },
+      ),
+    );
+  }
+
+  PreferredSize _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(80.0),
+      child: AppBar(
+        backgroundColor: const Color(0xFF1a242e),
+        toolbarHeight: 80,
+        title: Container(
+          height: 80,
+          alignment: Alignment.centerLeft,
+          child: RichText(
+            text: const TextSpan(
+              children: [
+                TextSpan(
+                    text: '@Info',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 26)),
+                TextSpan(
+                    text: 'PAE',
+                    style: TextStyle(
+                        color: Color(0XFF18a34c),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 21)),
+                TextSpan(
+                    text: ' - Reportes',
+                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

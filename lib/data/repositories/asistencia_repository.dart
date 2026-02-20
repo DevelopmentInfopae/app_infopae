@@ -175,7 +175,9 @@ class AsistenciaRepository {
 
   // Diccionario de grados
   final Map<String, String> nombresGrados = {
-    "0": "Preescolar",
+    "-2": "Prejardin",
+    "-1": "Jardin 1 o A o Kinder",
+    "0": "Jardin 2 o B o Transcicsion o Grado 0",
     "1": "Primero",
     "2": "Segundo",
     "3": "Tercero",
@@ -187,6 +189,9 @@ class AsistenciaRepository {
     "9": "Noveno",
     "10": "Décimo",
     "11": "Once",
+    "12": "Doce - Normal Superior",
+    "13": "Trece - Normal Superior",
+    "99": "Aceleracion del Aprendizaje"
   };
 
   Future<List<Map<String, dynamic>>> getComplementos(

@@ -59,6 +59,7 @@ class DatabaseHelper {
         ape2 TEXT NOT NULL,
         cod_inst TEXT NOT NULL,
         cod_sede TEXT NOT NULL,
+        nom_sede TEXT NOT NULL,
         cod_grado TEXT NOT NULL,
         nom_grupo TEXT NOT NULL,
         tipo_complemento TEXT NOT NULL

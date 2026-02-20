@@ -1,10 +1,12 @@
 import 'package:app_infopae/data/repositories/asistencia_repository.dart';
+import 'package:app_infopae/data/repositories/reportes_repository.dart';
 import 'package:app_infopae/logic/cubits/asistencia_cubit.dart';
 import 'package:app_infopae/logic/cubits/download_cubit.dart';
 import 'package:app_infopae/ui/pages/asistence_page.dart';
 import 'package:app_infopae/ui/pages/download_page.dart';
 import 'package:app_infopae/ui/pages/login_page.dart';
 import 'package:app_infopae/ui/pages/home_page.dart';
+import 'package:app_infopae/ui/pages/reportes_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,34 +18,47 @@ import 'data/repositories/user_repository.dart';
 import 'logic/cubits/login_cubit.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'logic/cubits/reportes_cubit.dart';
+
 final sl = GetIt.instance; // sl = Service Locator
 
 void initInjections() {
   // Repositorios
   // 1. Proveedores de Datos (Las herramientas base)
-  sl.registerLazySingleton(() => DatabaseHelper.instance); // Usando el .instance que ya tienes
+  sl.registerLazySingleton(
+      () => DatabaseHelper.instance); // Usando el .instance que ya tienes
   sl.registerLazySingleton(() => ApiProvider());
 
   // 2. Repositorios (Le pasamos lo que necesita usando sl())
   sl.registerLazySingleton(() => UserRepository(
-    dbHelper: sl<DatabaseHelper>(), // GetIt busca automáticamente el dbHelper registrado arriba
-    apiProvider: sl<ApiProvider>(), // GetIt busca el apiProvider
-  ));
+        dbHelper: sl<
+            DatabaseHelper>(), // GetIt busca automáticamente el dbHelper registrado arriba
+        apiProvider: sl<ApiProvider>(), // GetIt busca el apiProvider
+      ));
 
   sl.registerLazySingleton(() => DownloadRepository(
-    apiProvider: sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
-    dbHelper: sl(),
-  ));
+        apiProvider:
+            sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
+        dbHelper: sl(),
+      ));
 
   sl.registerLazySingleton(() => AsistenciaRepository(
-    apiProvider: sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
-    dbHelper: sl(),
-  ));
+        apiProvider:
+            sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
+        dbHelper: sl(),
+      ));
+
+  sl.registerLazySingleton(() => ReportesRepository(
+        apiProvider:
+            sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
+        dbHelper: sl(),
+      ));
 
   // 3. Cubits
   sl.registerFactory(() => LoginCubit(sl<UserRepository>()));
   sl.registerFactory(() => DownloadCubit(sl<DownloadRepository>()));
   sl.registerFactory(() => AsistenciaCubit(sl<AsistenciaRepository>()));
+  sl.registerFactory(() => ReportesCubit(sl<ReportesRepository>()));
 }
 
 void main() async {
@@ -72,7 +87,7 @@ class MyApp extends StatelessWidget {
               create: (_) => LoginCubit(sl()),
               child: const LoginPage(),
             ),
-        '/home': (context) => const HomePage(), 
+        '/home': (context) => const HomePage(),
         '/download': (context) => BlocProvider(
               create: (_) => sl<DownloadCubit>(),
               child: const DownloadPage(),
@@ -80,6 +95,10 @@ class MyApp extends StatelessWidget {
         '/asistencia': (context) => BlocProvider(
               create: (_) => sl<AsistenciaCubit>(),
               child: const AsistenciaPage(),
+            ),
+        '/reportes': (context) => BlocProvider(
+              create: (_) => sl<ReportesCubit>(),
+              child: ReportesPage(),
             ),
       },
     );
