@@ -7,12 +7,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Definimos los estados posibles de la pantalla
 abstract class LoginState {}
+
 class LoginInitial extends LoginState {}
+
 class LoginLoading extends LoginState {}
+
 class LoginSuccess extends LoginState {
   final List<UserModel> users;
   LoginSuccess(this.users);
 }
+
 class LoginError extends LoginState {
   final String message;
   LoginError(this.message);
@@ -39,7 +43,7 @@ class LoginCubit extends Cubit<LoginState> {
       if (domain == null) {
         print("--- Buscando dominio en el servidor central ---");
         domain = await repository.getTenantDomain(username);
-      } 
+      }
 
       if (domain == null) {
         emit(LoginError("No se encontró un contrato vinculado a este correo"));
@@ -59,13 +63,14 @@ class LoginCubit extends Cubit<LoginState> {
       } else {
         // 2. Si no existe local, disparamos la sincronización desde la API
         print("Usuario no encontrado localmente. Sincronizando desde API...");
-        
+
         // Esta función descarga los datos y los guarda en SQLite
         await repository.fetchAndSaveUsersFromApi();
 
         // 3. Reintentamos buscar localmente después de la descarga
         UserModel? newUser = await repository.getLocalUser(username, password);
-        print("*********************************new user**** ${newUser?.nombre}");
+        print(
+            "*********************************new user**** ${newUser?.nombre}");
 
         if (newUser != null) {
           final prefs = await SharedPreferences.getInstance();

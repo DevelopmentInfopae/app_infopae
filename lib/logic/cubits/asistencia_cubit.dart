@@ -12,20 +12,21 @@ class AsistenciaState {
   final List<Map<String, dynamic>> complementos;
   final List<dynamic> estudiantes;
   final List<dynamic> dias;
-  final Map<String, bool> diasMarcados; 
+  final Map<String, bool> diasMarcados;
+  final List<dynamic> diasConfirmados;
   final String? errorMessage;
 
   AsistenciaState({
     this.isLoading = false,
     this.instituciones = const [],
     this.sedes = const [],
-    this.grados = const[],
-    this.grupos = const[],
-    this.complementos = const[],
+    this.grados = const [],
+    this.grupos = const [],
+    this.complementos = const [],
     this.estudiantes = const [],
     this.dias = const [],
-    this.diasMarcados = const{},
-
+    this.diasMarcados = const {},
+    this.diasConfirmados = const [],
     this.errorMessage,
   });
 
@@ -40,6 +41,7 @@ class AsistenciaState {
     List<dynamic>? estudiantes,
     List<dynamic>? dias,
     Map<String, bool>? diasMarcados,
+    List<dynamic>? diasConfirmados,
     String? errorMessage,
   }) {
     return AsistenciaState(
@@ -52,6 +54,7 @@ class AsistenciaState {
       estudiantes: estudiantes ?? this.estudiantes,
       dias: dias ?? this.dias,
       diasMarcados: diasMarcados ?? this.diasMarcados,
+      diasConfirmados: diasConfirmados ?? this.diasConfirmados,
       errorMessage: errorMessage,
     );
   }
@@ -64,7 +67,7 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
   // 1. Cargar instituciones al entrar a la página
   Future<void> cargarInstituciones() async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(estudiantes: [], isLoading: true));
     try {
       final inst = await repository.getInstituciones();
       emit(state.copyWith(instituciones: inst, isLoading: false));
@@ -75,7 +78,7 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
   // 2. Cargar sedes cuando se seleccione una institución
   Future<void> cargarSedes(String instId) async {
-    emit(state.copyWith(sedes: []));
+    emit(state.copyWith(estudiantes: [], sedes: []));
     try {
       final sedes = await repository.getSedes(instId);
       emit(state.copyWith(sedes: sedes));
@@ -85,7 +88,8 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
   }
 
   Future<void> cargarGrados(String codSede) async {
-    emit(state.copyWith(grados: [])); // Limpiamos grados anteriores
+    emit(state
+        .copyWith(estudiantes: [], grados: [])); // Limpiamos grados anteriores
     try {
       final listaGrados = await repository.getGradosPorSede(codSede);
       emit(state.copyWith(grados: listaGrados));
@@ -95,9 +99,11 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
   }
 
   Future<void> cargarGrupos(String codSede, String codGrado) async {
-    emit(state.copyWith(grupos: [])); // Limpiamos grados anteriores
+    emit(state
+        .copyWith(estudiantes: [], grupos: [])); // Limpiamos grados anteriores
     try {
-      final listaGrupos = await repository.getGruposPorSedeGrado(codSede, codGrado);
+      final listaGrupos =
+          await repository.getGruposPorSedeGrado(codSede, codGrado);
       emit(state.copyWith(grupos: listaGrupos));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString()));
@@ -105,10 +111,12 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
   }
 
   // 1. Cargar instituciones al entrar a la página
-  Future<void> cargarComplementos(String codSede, String codGrado, String codGrupo) async {
-    emit(state.copyWith(complementos: []));
+  Future<void> cargarComplementos(
+      String codSede, String codGrado, String codGrupo) async {
+    emit(state.copyWith(estudiantes: [], complementos: []));
     try {
-      final listaComplementos = await repository.getComplementos(codSede, codGrado, codGrupo);
+      final listaComplementos =
+          await repository.getComplementos(codSede, codGrado, codGrupo);
       emit(state.copyWith(complementos: listaComplementos, isLoading: false));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
@@ -138,17 +146,19 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
     try {
       final diasDb = await repository.getDias();
       final lista = await repository.getEstudiantesConAsistencia(
-        inst: institucion, sede: sede, grado: grado, grupo: grupo, comp: complemento, dias : diasDb
-      );
+          inst: institucion,
+          sede: sede,
+          grado: grado,
+          grupo: grupo,
+          comp: complemento,
+          dias: diasDb);
       emit(state.copyWith(estudiantes: lista, dias: diasDb, isLoading: false));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
     }
   }
 
-  Future<void> toggleAsistencia( e, dia ) async {
-    print("eeeeeeeeeeeeeee $e");
-    // return;
+  Future<void> toggleAsistencia(e, dia) async {
     final String diaKey = dia['dia'].toString();
 
     /// ─────────────────────────────────────────
@@ -165,15 +175,8 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
       // Guardar en DB uno por uno
       for (var est in state.estudiantes) {
-        await repository.updateAsistenciaLocal(
-          est['tipo_doc'],
-          est['num_doc'],
-          est['tipo_complemento'],
-          dia['mes'],
-          dia['semana'],
-          dia['dia'],
-          1
-        );
+        await repository.updateAsistenciaLocal(est['tipo_doc'], est['num_doc'],
+            est['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], 1);
       }
       return;
     }
@@ -190,15 +193,8 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
       // Guardar en DB uno por uno
       for (var est in state.estudiantes) {
-        await repository.updateAsistenciaLocal(
-          est['tipo_doc'],
-          est['num_doc'],
-          est['tipo_complemento'],
-          dia['mes'],
-          dia['semana'],
-          dia['dia'],
-          1
-        );
+        await repository.updateAsistenciaLocal(est['tipo_doc'], est['num_doc'],
+            est['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], 0);
       }
       return;
     }
@@ -209,7 +205,7 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
     int asistio;
     if (e[dia['dia']] == 0) {
       asistio = 1;
-    }else{
+    } else {
       asistio = 0;
     }
     final nuevosEstudiantes = state.estudiantes.map((estudiante) {
@@ -225,8 +221,8 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
     }).toList();
     emit(state.copyWith(estudiantes: nuevosEstudiantes));
 
-
-    await repository.updateAsistenciaLocal(e['tipo_doc'], e['num_doc'], e['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], asistio);  
+    await repository.updateAsistenciaLocal(e['tipo_doc'], e['num_doc'],
+        e['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], asistio);
   }
 
   void marcarTodos(String dia) {
@@ -250,10 +246,32 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
     for (final b in state.estudiantes) {
       final valor = b[dia] ?? 0;
-      if (valor == 0) return false; // si uno no está marcado → NO están todos marcados
+      if (valor == 0)
+        return false; // si uno no está marcado → NO están todos marcados
     }
 
     return true;
   }
 
+  void confirmarDia(dynamic dia) async {
+    // Guardar en DB uno por uno
+    for (var est in state.estudiantes) {
+      await repository.updateAsistenciaLocalConfirmed(
+          est['tipo_doc'],
+          est['num_doc'],
+          est['tipo_complemento'],
+          dia['mes'],
+          dia['semana'],
+          dia['dia']);
+    }
+
+    final String keyConfirmacion = "confirmed_${dia['dia']}";
+    final nuevaLista = state.estudiantes.map((estudiante) {
+      return {
+        ...estudiante,
+        keyConfirmacion: 1,
+      };
+    }).toList();
+    emit(state.copyWith(estudiantes: nuevaLista));
+  }
 }

@@ -36,7 +36,7 @@ dependencies:
   
   # Base de datos local
   sqflite: ^2.2.8
-  path: 1.8.2
+  path: ^1.9.0
   
   # Peticiones al backend
   http: ^0.13.5

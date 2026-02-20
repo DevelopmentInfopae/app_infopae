@@ -24,11 +24,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(
-      path, 
-      version: 1, 
-      onCreate: _createDB
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -104,17 +100,20 @@ class DatabaseHelper {
         asistencia INTEGER DEFAULT 0,
         repite INTEGER DEFAULT 0,
         consumio INTEGER DEFAULT 0,
-        repitio INTEGER DEFAULT 0
+        repitio INTEGER DEFAULT 0,
+        confirmed INTEGER DEFAULT 0
       )
     ''');
 
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_asistencia_doc_dia ON asistencia_det (num_doc, dia);');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_asistencia_doc_dia ON asistencia_det (num_doc, dia);');
   }
 
   // Método para insertar usuarios masivamente
   Future<void> insertUser(Map<String, dynamic> user) async {
     final db = await instance.database;
-    await db.insert('users', user, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert('users', user,
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // Consultar si hay usuarios
@@ -133,7 +132,7 @@ class DatabaseHelper {
     if (maps.isNotEmpty) {
       return UserModel.fromMap(maps.first);
     }
-    return null; 
+    return null;
   }
 
   Future<void> insertOrUpdateUser(UserModel user) async {
@@ -142,18 +141,20 @@ class DatabaseHelper {
     await db.insert(
       'users',
       user.toMap(), // Convertimos el objeto a Map para guardarlo
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+      conflictAlgorithm:
+          ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
   }
 
-  // insertar o actualizar las sedes 
+  // insertar o actualizar las sedes
   Future<void> insertOrUpdateSede(SedesModel sede) async {
     final db = await instance.database;
 
     await db.insert(
       'sedes',
       sede.toMap(), // Convertimos el objeto a Map para guardarlo
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+      conflictAlgorithm:
+          ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
   }
 
@@ -163,13 +164,15 @@ class DatabaseHelper {
     final result = await db.rawQuery('SELECT * FROM sedes');
   }
 
-  Future<void> insertOrUpdateBeneficiario(BeneficiarioModel beneficiario) async {
+  Future<void> insertOrUpdateBeneficiario(
+      BeneficiarioModel beneficiario) async {
     final db = await instance.database;
 
     await db.insert(
       'beneficiarios',
       beneficiario.toMap(), // Convertimos el objeto a Map para guardarlo
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+      conflictAlgorithm:
+          ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
   }
 
@@ -179,13 +182,15 @@ class DatabaseHelper {
     final result = await db.rawQuery('SELECT * FROM benefiarios');
   }
 
-  Future<void> insertOrUpdatePriorizacion(PriorizacionModel priorizacion) async {
+  Future<void> insertOrUpdatePriorizacion(
+      PriorizacionModel priorizacion) async {
     final db = await instance.database;
 
     await db.insert(
       'priorizacion',
       priorizacion.toMap(), // Convertimos el objeto a Map para guardarlo
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+      conflictAlgorithm:
+          ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
   }
 
@@ -193,7 +198,6 @@ class DatabaseHelper {
     final db = await instance.database;
 
     final result = await db.rawQuery('SELECT * FROM priorizacion');
-
   }
 
   Future<void> insertOrUpdateCalendar(CalendarModel calendar) async {
@@ -202,7 +206,8 @@ class DatabaseHelper {
     await db.insert(
       'calendar',
       calendar.toMap(), // Convertimos el objeto a Map para guardarlo
-      conflictAlgorithm: ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
+      conflictAlgorithm:
+          ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
   }
 
@@ -210,14 +215,14 @@ class DatabaseHelper {
     final db = await instance.database;
 
     final result = await db.rawQuery('SELECT * FROM calendar');
-
   }
 
-  Future<void> insertOrUpdateAsistenciaDet( CalendarModel calendar ) async {
+  Future<void> insertOrUpdateAsistenciaDet(CalendarModel calendar) async {
     final prefs = await SharedPreferences.getInstance();
     final String? userId = prefs.getString('user_id');
     final db = await instance.database;
-    final List<Map<String, dynamic>> beneficiarios = await db.query('beneficiarios');
+    final List<Map<String, dynamic>> beneficiarios =
+        await db.query('beneficiarios');
 
     if (beneficiarios.isEmpty) return;
     final batch = db.batch();
@@ -226,19 +231,20 @@ class DatabaseHelper {
       batch.insert(
         'asistencia_det',
         {
-          'tipo_doc' : beneficiario['tipo_doc'],
-          'num_doc' : beneficiario['num_doc'],
-          'dia': calendar.dia, 
-          'semana' : calendar.semana,
-          'mes' : calendar.mes,
-          'complemento' : beneficiario['tipo_complemento'],
-          'id_usuario' : userId,
-          'asistencia' : 0,
-          'repite' : 0,
+          'tipo_doc': beneficiario['tipo_doc'],
+          'num_doc': beneficiario['num_doc'],
+          'dia': calendar.dia,
+          'semana': calendar.semana,
+          'mes': calendar.mes,
+          'complemento': beneficiario['tipo_complemento'],
+          'id_usuario': userId,
+          'asistencia': 0,
+          'repite': 0,
           'consumio': 0,
           'repitio': 0,
+          'confirmed': 0,
         },
-        conflictAlgorithm: ConflictAlgorithm.ignore, 
+        conflictAlgorithm: ConflictAlgorithm.ignore,
       );
     }
     await batch.commit(noResult: true);
@@ -247,19 +253,14 @@ class DatabaseHelper {
   Future<void> allAsistencia() async {
     final db = await instance.database;
 
-    final result = await db.rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '1096540682'");
-
-    print("***************** $result");
-
+    final result = await db
+        .rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '1096540682'");
   }
 
   Future<void> getAsistenceByDoc(String numDoc) async {
     final db = await instance.database;
 
-    final result = await db.rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '$numDoc' ");
-
-    print("***************** $result");
-
+    final result = await db
+        .rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '$numDoc' ");
   }
-
 }

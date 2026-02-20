@@ -9,43 +9,50 @@ class AsistenciaRepository {
 
   AsistenciaRepository({required this.apiProvider, required this.dbHelper});
 
-  Future<List<Map<String, dynamic>>> getEstudiantesLocal({
-    required String inst, required String sede, required String grado, 
-    required String grupo, required String comp
-  }) async {
+  Future<List<Map<String, dynamic>>> getEstudiantesLocal(
+      {required String inst,
+      required String sede,
+      required String grado,
+      required String grupo,
+      required String comp}) async {
     final db = await dbHelper.database;
     // Consulta SQL con filtros
     return await db.query(
       'beneficiarios',
       orderBy: 'ape1, ape2, nom1, nom2',
-      where: 'cod_inst = ? AND cod_sede = ? AND cod_grado = ? AND nom_grupo = ? AND tipo_complemento = ?',
+      where:
+          'cod_inst = ? AND cod_sede = ? AND cod_grado = ? AND nom_grupo = ? AND tipo_complemento = ?',
       whereArgs: [inst, sede, grado, grupo, comp],
     );
   }
 
-
   /// Funcion para obtener los datos con los días de asistencia
-  Future<List<Map<String, dynamic>>> getEstudiantesConAsistencia({
-    required String inst, required String sede, required String grado, 
-    required String grupo, required String comp, required List<dynamic> dias
-  }) async {
+  Future<List<Map<String, dynamic>>> getEstudiantesConAsistencia(
+      {required String inst,
+      required String sede,
+      required String grado,
+      required String grupo,
+      required String comp,
+      required List<dynamic> dias}) async {
     final db = await dbHelper.database;
 
     final List<Map<String, dynamic>> beneficiarios = await db.query(
       'beneficiarios',
       orderBy: 'ape1, ape2, nom1, nom2',
-      where: 'cod_inst = ? AND cod_sede = ? AND cod_grado = ? AND nom_grupo = ? AND tipo_complemento = ?',
+      where:
+          'cod_inst = ? AND cod_sede = ? AND cod_grado = ? AND nom_grupo = ? AND tipo_complemento = ?',
       whereArgs: [inst, sede, grado, grupo, comp],
     );
 
     if (beneficiarios.isEmpty) return [];
 
-    final List<String> diasTexto = dias.map((d) => d['dia'].toString()).toList();
+    final List<String> diasTexto =
+        dias.map((d) => d['dia'].toString()).toList();
     final String placeholders = diasTexto.map((_) => '?').join(',');
 
     final List<Map<String, dynamic>> asistenciasRaw = await db.query(
       'asistencia_det',
-      where: 'dia IN ($placeholders) AND asistencia = 1',
+      where: 'dia IN ($placeholders)',
       whereArgs: diasTexto,
     );
 
@@ -53,14 +60,18 @@ class AsistenciaRepository {
       final Map<String, dynamic> estudianteMap = Map<String, dynamic>.from(b);
       for (var d in dias) {
         String diaKey = d['dia'].toString(); // Ejemplo: "16"
-        
+
         final registro = asistenciasRaw.firstWhere(
           (a) => a['num_doc'] == b['num_doc'] && a['dia'].toString() == diaKey,
           orElse: () => {},
         );
-        estudianteMap[diaKey] = registro.isNotEmpty ? registro['asistencia'] : 0;
+        estudianteMap[diaKey] =
+            registro.isNotEmpty ? registro['asistencia'] : 0;
+
+        estudianteMap['confirmed_$diaKey'] =
+            registro.isNotEmpty ? registro['confirmed'] : 0;
       }
-      
+
       return estudianteMap;
     }).toList();
   }
@@ -78,18 +89,14 @@ class AsistenciaRepository {
   // Trae las sedes de esa institución específica
   Future<List<Map<String, dynamic>>> getSedes(String codInst) async {
     final db = await dbHelper.database;
-    return await db.query(
-      'sedes',
-      where: 'cod_inst = ?',
-      whereArgs: [codInst],
-      orderBy: 'nom_sede ASC'
-    );
+    return await db.query('sedes',
+        where: 'cod_inst = ?', whereArgs: [codInst], orderBy: 'nom_sede ASC');
   }
 
   // Trae las sedes de esa institución específica
   Future<List<Map<String, dynamic>>> getGradosPorSede(String codSede) async {
     final db = await dbHelper.database;
-    final List<Map<String, dynamic>> res =  await db.rawQuery('''
+    final List<Map<String, dynamic>> res = await db.rawQuery('''
       SELECT DISTINCT cod_grado, cod_grado
       FROM beneficiarios 
       WHERE cod_sede = ? 
@@ -100,14 +107,16 @@ class AsistenciaRepository {
       String codigo = item['cod_grado'].toString();
       return {
         'cod_grado': codigo,
-        'nom_grado': nombresGrados[codigo] ?? "Grado $codigo", // Si no existe en el mapa, muestra el número
+        'nom_grado': nombresGrados[codigo] ??
+            "Grado $codigo", // Si no existe en el mapa, muestra el número
       };
     }).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getGruposPorSedeGrado(String codSede, String codGrado) async {
+  Future<List<Map<String, dynamic>>> getGruposPorSedeGrado(
+      String codSede, String codGrado) async {
     final db = await dbHelper.database;
-      return await db.rawQuery('''
+    return await db.rawQuery('''
       SELECT DISTINCT nom_grupo, nom_grupo
       FROM beneficiarios 
       WHERE cod_sede = ? 
@@ -132,9 +141,10 @@ class AsistenciaRepository {
     "11": "Once",
   };
 
-  Future<List<Map<String, dynamic>>> getComplementos(String codSede, String codGrado, String codGrupo) async {
+  Future<List<Map<String, dynamic>>> getComplementos(
+      String codSede, String codGrado, String codGrupo) async {
     final db = await dbHelper.database;
-      return await db.rawQuery('''
+    return await db.rawQuery('''
       SELECT DISTINCT tipo_complemento, tipo_complemento
       FROM beneficiarios 
       WHERE cod_sede = ? 
@@ -144,7 +154,6 @@ class AsistenciaRepository {
     ''', [codSede, codGrado, codGrupo]);
   }
 
-  
   Future<List<Map<String, dynamic>>> getDias() async {
     final db = await dbHelper.database;
     return await db.query(
@@ -152,23 +161,43 @@ class AsistenciaRepository {
     );
   }
 
-  Future<void> updateAsistenciaLocal( String tipoDoc, String numDoc, String tipoComplemento, String mes, String semana, String dia, int valor ) async {
+  Future<void> updateAsistenciaLocal(
+      String tipoDoc,
+      String numDoc,
+      String tipoComplemento,
+      String mes,
+      String semana,
+      String dia,
+      int valor) async {
     final db = await dbHelper.database;
 
-    print('$tipoDoc, $numDoc, $tipoComplemento, $mes, $semana, $dia, $valor');
     await db.update(
-      'asistencia_det',                
-      { 'asistencia': valor, 'consumio': valor }, 
+      'asistencia_det',
+      {'asistencia': valor, 'consumio': valor},
       where:
           'tipo_doc = ? AND num_doc = ? AND complemento = ? AND mes = ? AND semana = ? AND dia = ?',
       whereArgs: [tipoDoc, numDoc, tipoComplemento, mes, semana, dia],
     );
-
-    final result = await db.rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '$numDoc' ");
-
-    // print("************* result **** $result");
   }
 
-  
+  Future<void> updateAsistenciaLocalConfirmed(
+    String tipoDoc,
+    String numDoc,
+    String tipoComplemento,
+    String mes,
+    String semana,
+    String dia,
+  ) async {
+    final db = await dbHelper.database;
 
+    await db.update(
+      'asistencia_det',
+      {
+        'confirmed': 1,
+      },
+      where:
+          'tipo_doc = ? AND num_doc = ? AND complemento = ? AND mes = ? AND semana = ? AND dia = ?',
+      whereArgs: [tipoDoc, numDoc, tipoComplemento, mes, semana, dia],
+    );
+  }
 }

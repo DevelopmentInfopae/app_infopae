@@ -45,56 +45,68 @@ class ListaEstudiantesWidget extends StatelessWidget {
                   children: dias.map((dia) {
                     // Tomamos la inicial del día
                     final String nomDia = dia['nomDia'][0].toUpperCase();
-                    final marked = context.read<AsistenciaCubit>().todosMarcados(dia['dia']);
+                    final marked = context
+                        .read<AsistenciaCubit>()
+                        .todosMarcados(dia['dia']);
                     return GestureDetector(
                       onTap: () {
+                        final marcadoAhora = context
+                            .read<AsistenciaCubit>()
+                            .todosMarcados(dia['dia']);
 
-                        final marcadoAhora = context.read<AsistenciaCubit>().todosMarcados(dia['dia']);
-
-  if (marcadoAhora) {
-    onCheckTapped("DESMARCAR_TODOS", dia);
-    context.read<AsistenciaCubit>().desmarcarTodos(dia['dia']);
-  } else {
-    onCheckTapped("MARCAR_TODOS", dia);
-    context.read<AsistenciaCubit>().marcarTodos(dia['dia']);
-  }
+                        if (marcadoAhora) {
+                          onCheckTapped("DESMARCAR_TODOS", dia);
+                          context
+                              .read<AsistenciaCubit>()
+                              .desmarcarTodos(dia['dia']);
+                        } else {
+                          onCheckTapped("MARCAR_TODOS", dia);
+                          context
+                              .read<AsistenciaCubit>()
+                              .marcarTodos(dia['dia']);
+                        }
                         // onCheckTapped(action, dia);
                       },
                       child: Container(
                         width: 24,
                         margin: const EdgeInsets.only(left: 6),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              nomDia,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0XFF18a34c),
-                              ),
+                        child:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                          Text(
+                            nomDia,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0XFF18a34c),
                             ),
-                            const SizedBox(height: 2),
-                            Container(
-                              margin: const EdgeInsets.only(left: 1),
-                              width: 24, // Lo hacemos un poco más grande para que sea fácil de tocar
-                              height: 24,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: marked ? const Color(0XFF18a34c) : Colors.grey.shade300,
-                                  width: 1.5,
-                                ),
-                                color: marked ? const Color(0XFF18a34c).withOpacity(0.1) : Colors.transparent,
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            margin: const EdgeInsets.only(left: 1),
+                            width:
+                                24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: marked
+                                    ? const Color(0XFF18a34c)
+                                    : Colors.grey.shade300,
+                                width: 1.5,
                               ),
-                              child: Icon(
-                                Icons.check,
-                                size: 14,
-                                color:  marked ? const Color(0XFF18a34c) : Colors.transparent,
-                              ),
+                              color: marked
+                                  ? const Color(0XFF18a34c).withOpacity(0.1)
+                                  : Colors.transparent,
                             ),
-                          ]
-                        ),
+                            child: Icon(
+                              Icons.check,
+                              size: 14,
+                              color: marked
+                                  ? const Color(0XFF18a34c)
+                                  : Colors.transparent,
+                            ),
+                          ),
+                        ]),
                       ),
                     );
                   }).toList(),
@@ -115,17 +127,22 @@ class ListaEstudiantesWidget extends StatelessWidget {
             ),
             itemBuilder: (context, i) {
               final e = estudiantes[i];
-        
-              final String apellidos = "${e['ape1'] ?? ''} ${e['ape2'] ?? ''}".trim();
-              final String nombres = "${e['nom1'] ?? ''} ${e['nom2'] ?? ''}".trim();
-        
+              print("************************** $e");
+
+              final String apellidos =
+                  "${e['ape1'] ?? ''} ${e['ape2'] ?? ''}".trim();
+              final String nombres =
+                  "${e['nom1'] ?? ''} ${e['nom2'] ?? ''}".trim();
+
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 title: Text(
                   apellidos,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14, // Un poco más pequeño para dar espacio a los días
+                    fontSize:
+                        14, // Un poco más pequeño para dar espacio a los días
                     color: Color(0xFF1a242e),
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -137,7 +154,8 @@ class ListaEstudiantesWidget extends StatelessWidget {
                 ),
                 // --- AQUÍ PINTAMOS LOS DÍAS ---
                 trailing: SizedBox(
-                  width: dias.length * 30.0, // Ajusta el ancho según la cantidad de días
+                  width: dias.length *
+                      30.0, // Ajusta el ancho según la cantidad de días
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: dias.map((dia) {
@@ -147,26 +165,34 @@ class ListaEstudiantesWidget extends StatelessWidget {
                       if (e[dia['dia']] != null && e[dia['dia']] == 1) {
                         asistio = true;
                       }
-        
+
                       return GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => onCheckTapped(e, dia), // Notificamos el click
+                        onTap: () =>
+                            onCheckTapped(e, dia), // Notificamos el click
                         child: Container(
                           margin: const EdgeInsets.only(left: 6),
-                          width: 24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                          width:
+                              24, // Lo hacemos un poco más grande para que sea fácil de tocar
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: asistio ? const Color(0XFF18a34c) : Colors.grey.shade300,
+                              color: asistio
+                                  ? const Color(0XFF18a34c)
+                                  : Colors.grey.shade300,
                               width: 1.5,
                             ),
-                            color: asistio ? const Color(0XFF18a34c).withOpacity(0.1) : Colors.transparent,
+                            color: asistio
+                                ? const Color(0XFF18a34c).withOpacity(0.1)
+                                : Colors.transparent,
                           ),
                           child: Icon(
                             Icons.check,
                             size: 14,
-                            color: asistio ? const Color(0XFF18a34c) : Colors.transparent,
+                            color: asistio
+                                ? const Color(0XFF18a34c)
+                                : Colors.transparent,
                           ),
                         ),
                       );
@@ -178,6 +204,80 @@ class ListaEstudiantesWidget extends StatelessWidget {
                 },
               );
             },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          decoration: BoxDecoration(
+            color: Colors.grey
+                .shade50, // Un color ligeramente distinto para diferenciarlo
+            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "CONFIRMACIÓN DÍA",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1a242e),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: dias.length * 30.0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: dias.map((dia) {
+                    final String keyConfirmacion = "confirmed_${dia['dia']}";
+
+                    // VALIDACIÓN: Verificamos si CADA estudiante tiene ese día confirmado
+                    // .every devuelve true solo si todos cumplen la condición
+                    final bool isConfirmed = estudiantes.every((e) {
+                      return e[keyConfirmacion] != null &&
+                          (e[keyConfirmacion] == 1 ||
+                              e[keyConfirmacion] == "1");
+                    });
+
+                    print("isConfirmed $isConfirmed");
+                    // Consultamos al Cubit si el día ya está confirmado
+                    // Asumiendo que tienes un método 'esDiaConfirmado' en tu Cubit
+
+                    return GestureDetector(
+                      onTap: () {
+                        onCheckTapped("CONFIRMAR_DIA", dia);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape
+                              .rectangle, // Cuadrado para diferenciar de la asistencia
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isConfirmed
+                                ? const Color(0XFF18a34c)
+                                : Colors.grey.shade400,
+                            width: 2,
+                          ),
+                          color: isConfirmed
+                              ? const Color(0XFF18a34c)
+                              : Colors.white,
+                        ),
+                        child: Icon(
+                          Icons.done_all, // Icono diferente para "Confirmación"
+                          size: 16,
+                          color:
+                              isConfirmed ? Colors.white : Colors.transparent,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
         ),
       ],
