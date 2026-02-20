@@ -76,6 +76,54 @@ class AsistenciaRepository {
     }).toList();
   }
 
+  /// Funcion para obtener los datos con los días de asistencia
+  Future<List<Map<String, dynamic>>> getEstudiantesConAsistenciaSede({
+    required String inst,
+    required String sede,
+    required String comp,
+    required List<dynamic> dias,
+  }) async {
+    final db = await dbHelper.database;
+
+    final List<Map<String, dynamic>> beneficiarios = await db.query(
+      'beneficiarios',
+      orderBy: 'ape1, ape2, nom1, nom2',
+      where: 'cod_inst = ? AND cod_sede = ? AND tipo_complemento = ?',
+      whereArgs: [inst, sede, comp],
+    );
+
+    if (beneficiarios.isEmpty) return [];
+
+    final List<String> diasTexto =
+        dias.map((d) => d['dia'].toString()).toList();
+    final String placeholders = diasTexto.map((_) => '?').join(',');
+
+    final List<Map<String, dynamic>> asistenciasRaw = await db.query(
+      'asistencia_det',
+      where: 'dia IN ($placeholders)',
+      whereArgs: diasTexto,
+    );
+
+    return beneficiarios.map((b) {
+      final Map<String, dynamic> estudianteMap = Map<String, dynamic>.from(b);
+      estudianteMap['consumio'] = 0;
+      for (var d in dias) {
+        String diaKey = d['dia'].toString(); // Ejemplo: "16"
+
+        final registro = asistenciasRaw.firstWhere(
+          (a) => a['num_doc'] == b['num_doc'] && a['dia'].toString() == diaKey,
+          orElse: () => {},
+        );
+        estudianteMap[diaKey] =
+            registro.isNotEmpty ? registro['asistencia'] : 0;
+
+        estudianteMap['consumio'] += registro['consumio'];
+      }
+
+      return estudianteMap;
+    }).toList();
+  }
+
   // Trae solo una fila por cada institución
   Future<List<Map<String, dynamic>>> getInstituciones() async {
     final db = await dbHelper.database;

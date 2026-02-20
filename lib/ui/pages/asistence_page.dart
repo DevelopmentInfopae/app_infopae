@@ -128,7 +128,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                           });
                         }),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
                         ElevatedButton(
                           onPressed: cargando ? null : _ejecutarFiltro,
@@ -168,15 +168,27 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                   return ListaEstudiantesWidget(
                     estudiantes: state.estudiantes,
                     dias: state.dias,
-                    onCheckTapped: (estudiante, dia) {
+                    onCheckTapped: (estudiante, dia) async {
                       if (estudiante == "CONFIRMAR_DIA") {
                         // 2. AQUÍ usas la función del Cubit
                         context.read<AsistenciaCubit>().confirmarDia(dia);
                       } else {
                         // Aquí llamas a tu Cubit para guardar la asistencia
-                        context
+                        await context
                             .read<AsistenciaCubit>()
                             .toggleAsistencia(estudiante, dia);
+
+                        if (estudiante == 'MARCAR_TODOS' ||
+                            estudiante == 'DESMARCAR_TODOS') {
+                          if (instId != null &&
+                              sedeId != null &&
+                              complementoId != null) {
+                            context.read<AsistenciaCubit>().reloadConsumos(
+                                institucion: instId!,
+                                sede: sedeId!,
+                                complemento: complementoId!);
+                          }
+                        }
                       }
                     },
                   );

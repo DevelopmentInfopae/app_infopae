@@ -19,6 +19,52 @@ class ListaEstudiantesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        BlocBuilder<AsistenciaCubit, AsistenciaState>(
+          buildWhen: (previous, current) =>
+              previous.estudiantesSede !=
+              current
+                  .estudiantesSede, // Solo reconstruye si cambia la data global
+          builder: (context, state) {
+            final listaCompleta = state.estudiantesSede ?? [];
+            // 1. Sumamos el campo 'consumio' de TODA la sede/complemento en el state
+            final int totalConsumido = listaCompleta.fold(0, (sum, e) {
+              final valor = e['consumio'] ?? 0;
+              return sum +
+                  (valor is int ? valor : int.tryParse(valor.toString()) ?? 0);
+            });
+
+            // 2. Obtenemos el total de beneficiarios de esa sede
+            final int totalBeneficiarios = listaCompleta.length;
+
+            return Center(
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.5,
+                margin: const EdgeInsets.symmetric(vertical: 5),
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0XFF18a34c),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  "$totalConsumido de $totalBeneficiarios", // <--- Valores dinámicos
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
@@ -127,7 +173,6 @@ class ListaEstudiantesWidget extends StatelessWidget {
             ),
             itemBuilder: (context, i) {
               final e = estudiantes[i];
-              print("************************** $e");
 
               final String apellidos =
                   "${e['ape1'] ?? ''} ${e['ape2'] ?? ''}".trim();
@@ -240,7 +285,6 @@ class ListaEstudiantesWidget extends StatelessWidget {
                               e[keyConfirmacion] == "1");
                     });
 
-                    print("isConfirmed $isConfirmed");
                     // Consultamos al Cubit si el día ya está confirmado
                     // Asumiendo que tienes un método 'esDiaConfirmado' en tu Cubit
 

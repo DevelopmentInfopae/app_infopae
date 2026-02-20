@@ -15,6 +15,7 @@ class AsistenciaState {
   final Map<String, bool> diasMarcados;
   final List<dynamic> diasConfirmados;
   final String? errorMessage;
+  final List<dynamic> estudiantesSede;
 
   AsistenciaState({
     this.isLoading = false,
@@ -28,6 +29,7 @@ class AsistenciaState {
     this.diasMarcados = const {},
     this.diasConfirmados = const [],
     this.errorMessage,
+    this.estudiantesSede = const [],
   });
 
   // Método copyWith para actualizar solo lo que necesitemos
@@ -43,6 +45,7 @@ class AsistenciaState {
     Map<String, bool>? diasMarcados,
     List<dynamic>? diasConfirmados,
     String? errorMessage,
+    List<dynamic>? estudiantesSede,
   }) {
     return AsistenciaState(
       isLoading: isLoading ?? this.isLoading,
@@ -56,6 +59,7 @@ class AsistenciaState {
       diasMarcados: diasMarcados ?? this.diasMarcados,
       diasConfirmados: diasConfirmados ?? this.diasConfirmados,
       errorMessage: errorMessage,
+      estudiantesSede: estudiantesSede ?? this.estudiantesSede,
     );
   }
 }
@@ -152,7 +156,33 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
           grupo: grupo,
           comp: complemento,
           dias: diasDb);
-      emit(state.copyWith(estudiantes: lista, dias: diasDb, isLoading: false));
+
+      final listaSede = await repository.getEstudiantesConAsistenciaSede(
+          inst: institucion, sede: sede, comp: complemento, dias: diasDb);
+
+      emit(state.copyWith(
+          estudiantes: lista,
+          estudiantesSede: listaSede,
+          dias: diasDb,
+          isLoading: false));
+    } catch (e) {
+      emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
+    }
+  }
+
+  Future<void> reloadConsumos({
+    required String institucion,
+    required String sede,
+    required String complemento,
+  }) async {
+    emit(state.copyWith(estudiantesSede: [], isLoading: true));
+    try {
+      final diasDb = await repository.getDias();
+
+      final listaSede = await repository.getEstudiantesConAsistenciaSede(
+          inst: institucion, sede: sede, comp: complemento, dias: diasDb);
+
+      emit(state.copyWith(estudiantesSede: listaSede, isLoading: false));
     } catch (e) {
       emit(state.copyWith(errorMessage: e.toString(), isLoading: false));
     }
@@ -216,10 +246,25 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
         actualizado[key] = valorActual == 1 ? 0 : 1;
         return actualizado;
       }
-      // print("object $estudiante");
       return estudiante;
     }).toList();
-    emit(state.copyWith(estudiantes: nuevosEstudiantes));
+
+    final nuevosEstudiantesSede = state.estudiantesSede.map((estudiante) {
+      if (estudiante['num_doc'] == e['num_doc']) {
+        final actualizado = Map<String, dynamic>.from(estudiante);
+        if (asistio == 1) {
+          actualizado['consumio'] += 1;
+        } else {
+          actualizado['consumio'] -= 1;
+        }
+        return actualizado;
+      }
+      return estudiante;
+    }).toList();
+
+    emit(state.copyWith(
+        estudiantes: nuevosEstudiantes,
+        estudiantesSede: nuevosEstudiantesSede));
 
     await repository.updateAsistenciaLocal(e['tipo_doc'], e['num_doc'],
         e['tipo_complemento'], dia['mes'], dia['semana'], dia['dia'], asistio);
