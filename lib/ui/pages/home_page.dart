@@ -174,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                   "Sincroniza los datos recolectados con el servidor central.",
               icon: Icons.cloud_upload_rounded,
               color: const Color(0XFF18a34c),
-              onTap: () => Navigator.pushNamed(context, '/download'),
+              onTap: () => Navigator.pushNamed(context, '/upload'),
             ),
           ],
         ),

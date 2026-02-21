@@ -1,12 +1,15 @@
 import 'package:app_infopae/data/repositories/asistencia_repository.dart';
 import 'package:app_infopae/data/repositories/reportes_repository.dart';
+import 'package:app_infopae/data/repositories/upload_repository.dart';
 import 'package:app_infopae/logic/cubits/asistencia_cubit.dart';
 import 'package:app_infopae/logic/cubits/download_cubit.dart';
+import 'package:app_infopae/logic/cubits/upload_cubit.dart';
 import 'package:app_infopae/ui/pages/asistence_page.dart';
 import 'package:app_infopae/ui/pages/download_page.dart';
 import 'package:app_infopae/ui/pages/login_page.dart';
 import 'package:app_infopae/ui/pages/home_page.dart';
 import 'package:app_infopae/ui/pages/reportes_page.dart';
+import 'package:app_infopae/ui/pages/upload_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,11 +57,18 @@ void initInjections() {
         dbHelper: sl(),
       ));
 
+  sl.registerLazySingleton(() => UploadRepository(
+        apiProvider:
+            sl(), // Le pasas el sl() y GetIt le entrega el ApiProvider solo
+        dbHelper: sl(),
+      ));
+
   // 3. Cubits
   sl.registerFactory(() => LoginCubit(sl<UserRepository>()));
   sl.registerFactory(() => DownloadCubit(sl<DownloadRepository>()));
   sl.registerFactory(() => AsistenciaCubit(sl<AsistenciaRepository>()));
   sl.registerFactory(() => ReportesCubit(sl<ReportesRepository>()));
+  sl.registerFactory(() => UploadCubit(sl<UploadRepository>()));
 }
 
 void main() async {
@@ -99,6 +109,10 @@ class MyApp extends StatelessWidget {
         '/reportes': (context) => BlocProvider(
               create: (_) => sl<ReportesCubit>(),
               child: ReportesPage(),
+            ),
+        '/upload': (context) => BlocProvider(
+              create: (_) => sl<UploadCubit>(),
+              child: UploadPage(),
             ),
       },
     );

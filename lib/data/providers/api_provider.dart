@@ -8,12 +8,11 @@ import '../models/sedes_model.dart';
 import '../models/user_model.dart';
 
 class ApiProvider {
-
   Future<List<UserModel>> getUsersFromApi() async {
     try {
       // 1. Obtener la instancia de shared preferences
       final prefs = await SharedPreferences.getInstance();
-      
+
       // 2. Leer el dominio guardado (el mismo nombre que usaste en el Repository)
       final String? baseUrl = prefs.getString('api_url');
 
@@ -21,15 +20,17 @@ class ApiProvider {
       if (baseUrl == null || baseUrl.isEmpty) {
         throw Exception("No se ha configurado un dominio de contrato.");
       }
-      final response = await http.get(Uri.parse('$baseUrl/modules/api/get_users.php'));
+      final response =
+          await http.get(Uri.parse('$baseUrl/modules/api/get_users.php'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        
+
         // Convertimos el JSON de la API en una lista de UserModels
         return data.map((user) => UserModel.fromMap(user)).toList();
       } else {
-        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
       }
     } catch (e) {
       throw Exception("Error de red: $e");
@@ -58,10 +59,10 @@ class ApiProvider {
         List<dynamic> data = json.decode(response.body);
 
         return data.map((sede) => SedesModel.fromMap(sede)).toList();
-      }else {
-        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+      } else {
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
       }
-
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -77,7 +78,8 @@ class ApiProvider {
         throw Exception("No se ha configurado un dominio de contrato.");
       }
 
-      final uri = Uri.parse('$baseUrl/modules/api/get_beneficiarios.php').replace(
+      final uri =
+          Uri.parse('$baseUrl/modules/api/get_beneficiarios.php').replace(
         queryParameters: {
           'id': id,
         },
@@ -89,16 +91,16 @@ class ApiProvider {
         List<dynamic> data = json.decode(response.body);
 
         return data.map((sede) => BeneficiarioModel.fromMap(sede)).toList();
-      }else {
-        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+      } else {
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
       }
-
     } catch (e) {
       throw Exception(e.toString());
     }
   }
 
-  Future<List<PriorizacionModel>> getPriorizacionFromApi() async{
+  Future<List<PriorizacionModel>> getPriorizacionFromApi() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? baseUrl = prefs.getString('api_url');
@@ -108,7 +110,8 @@ class ApiProvider {
         throw Exception("No se ha configurado un dominio de contrato.");
       }
 
-      final uri = Uri.parse('$baseUrl/modules/api/get_priorizacion.php').replace(
+      final uri =
+          Uri.parse('$baseUrl/modules/api/get_priorizacion.php').replace(
         queryParameters: {
           'id': id,
         },
@@ -119,17 +122,19 @@ class ApiProvider {
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
 
-        return data.map((priorizacion) => PriorizacionModel.fromMap(priorizacion)).toList();
-      }else {
-        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+        return data
+            .map((priorizacion) => PriorizacionModel.fromMap(priorizacion))
+            .toList();
+      } else {
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
       }
-
     } catch (e) {
       throw Exception(e.toString());
     }
-  } 
+  }
 
-  Future<List<CalendarModel>> getCalendarFromApi() async{
+  Future<List<CalendarModel>> getCalendarFromApi() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? baseUrl = prefs.getString('api_url');
@@ -147,12 +152,25 @@ class ApiProvider {
         List<dynamic> data = json.decode(response.body);
 
         return data.map((calendar) => CalendarModel.fromMap(calendar)).toList();
-      }else {
-        throw Exception("Error al conectar con el servidor: ${response.statusCode}");
+      } else {
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
       }
-
     } catch (e) {
       throw Exception(e.toString());
     }
+  }
+
+  postAsistencia(List<Map<String, dynamic>> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    print(jsonEncode(data));
+    final String? baseUrl = prefs.getString('api_url');
+    final response = await http.post(
+      Uri.parse('$baseUrl/modules/api/registrar_asistencia.php'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+    print("responsseeee  ${response.body}");
+    if (response.statusCode != 200) throw Exception("Fallo en el servidor");
   }
 }
