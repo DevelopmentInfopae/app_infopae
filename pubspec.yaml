@@ -53,6 +53,15 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.10.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logos/logo_app.png"
+  # Esto soluciona el icono en blanco en Android moderno:
+  adaptive_icon_background: "#FFFFFF" # O el color principal de tu marca
+  adaptive_icon_foreground: "assets/logos/logo_app.png"
 
 flutter:
   uses-material-design: true
