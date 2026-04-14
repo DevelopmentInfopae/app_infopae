@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
@@ -17,6 +15,11 @@ class LoginSuccess extends LoginState {
   LoginSuccess(this.users);
 }
 
+class LoginUsuarioDiferente extends LoginState {
+  final String mensaje;
+  LoginUsuarioDiferente(this.mensaje);
+}
+
 class LoginError extends LoginState {
   final String message;
   LoginError(this.message);
@@ -24,6 +27,26 @@ class LoginError extends LoginState {
 
 class LoginCubit extends Cubit<LoginState> {
   final UserRepository repository;
+
+    // Helper para validar cambio de usuario
+  Future<bool> _validarCambioUsuario(String username, SharedPreferences prefs) async {
+    final ultimoUsuario = prefs.getString('ultimo_usuario') ?? '';
+    if (ultimoUsuario.isNotEmpty && ultimoUsuario != username) {
+      final tienePendientes = await repository.tieneAsistenciaPendiente();
+      return tienePendientes;
+    }
+    return false;
+  }
+
+  // Helper para guardar sesión
+  Future<void> _guardarSesion(UserModel user, SharedPreferences prefs) async {
+    await prefs.setString('user_nombre', user.nombre);
+    await prefs.setString('user_foto', user.foto ?? '');
+    await prefs.setString('user_id', user.id.toString());
+    await prefs.setString('ultimo_usuario', user.nombre); // 👈 Guarda el último usuario
+    final hoy = DateTime.now().toIso8601String().substring(0, 10);
+    await prefs.setString('session_date', hoy);
+  }
 
   LoginCubit(this.repository) : super(LoginInitial());
 
@@ -40,43 +63,47 @@ class LoginCubit extends Cubit<LoginState> {
       String? domain = prefs.getString('api_url');
 
       // 2. Si NO existe (es la primera vez), lo buscamos en el servidor central
-      if (domain == null) {
-        print("--- Buscando dominio en el servidor central ---");
-        domain = await repository.getTenantDomain(username);
-      }
+      domain ??= await repository.getTenantDomain(username);
 
       if (domain == null) {
         emit(LoginError("No se encontró un contrato vinculado a este correo"));
         return;
       }
 
+      final String currentWeek = await repository.getCurrentWeek();
+      await prefs.setString('current_week', currentWeek);
+
       // Llegados a este punto sabemos el dominio por ejemplo: https://infopaegiron.com/2026/demo/app
       // 3. Intentamos buscar el usuario en la base de datos local
       UserModel? user = await repository.getLocalUser(username, password);
       if (user != null) {
-        // Sí, el usuario existe sigue el proceso emite un success
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_nombre', user.nombre);
-        await prefs.setString('user_foto', user.foto ?? '');
-        await prefs.setString('user_id', user.id.toString());
+        final bloquear = await _validarCambioUsuario(username, prefs);
+        if (bloquear) {
+          emit(LoginUsuarioDiferente(
+            "Este equipo tiene un proceso de toma de asistencia activo. "
+            "Debes finalizar o sincronizar antes de cambiar de usuario."
+          ));
+          return;
+        }
+        await _guardarSesion(user, prefs);
+
         emit(LoginSuccess([user])); // Usuario encontrado localmente
       } else {
-        // 2. Si no existe local, disparamos la sincronización desde la API
-        print("Usuario no encontrado localmente. Sincronizando desde API...");
-
         // Esta función descarga los datos y los guarda en SQLite
         await repository.fetchAndSaveUsersFromApi();
-
-        // 3. Reintentamos buscar localmente después de la descarga
         UserModel? newUser = await repository.getLocalUser(username, password);
-        print(
-            "*********************************new user**** ${newUser?.nombre}");
 
         if (newUser != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_nombre', newUser.nombre);
-          await prefs.setString('user_foto', newUser.foto ?? '');
-          await prefs.setString('user_id', newUser.id.toString());
+          final bloquear = await _validarCambioUsuario(username, prefs);
+          if (bloquear) {
+            emit(LoginUsuarioDiferente(
+              "Este equipo tiene un proceso de toma de asistencia activo. "
+              "Debes finalizar o sincronizar antes de cambiar de usuario."
+            ));
+            return;
+          }
+          await _guardarSesion(newUser, prefs);
+
           emit(LoginSuccess([newUser]));
         } else {
           emit(LoginError("Credenciales incorrectas o usuario no autorizado"));

@@ -1,10 +1,13 @@
 import 'package:app_infopae/data/repositories/upload_repository.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // --- 1. DEFINICIÓN DE ESTADOS ---
 abstract class UploadState {}
 
 class UploadInitial extends UploadState {}
+
+class DownloadSinConexion extends UploadState {}
 
 class UploadInProgress extends UploadState {
   final double progress;
@@ -20,12 +23,31 @@ class UploadFailure extends UploadState {
 
 // --- 2. EL CUBIT ---
 class UploadCubit extends Cubit<UploadState> {
+
+  Future<bool> _tieneConexion() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+
+  Future<void> verificarConexion() async {
+    final conectado = await _tieneConexion();
+    if (!conectado) {
+      emit(DownloadSinConexion());
+    }
+  }
+  
   final UploadRepository repository;
 
   UploadCubit(this.repository) : super(UploadInitial());
 
   // Ejemplo de cómo usarías la lógica más adelante:
   Future<void> iniciarCarga() async {
+    final conectado = await _tieneConexion();
+    if (!conectado) {
+      emit(DownloadSinConexion());
+      return;
+    }
+
     try {
       emit(UploadInProgress(0.1));
 

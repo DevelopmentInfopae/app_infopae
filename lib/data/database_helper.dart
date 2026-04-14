@@ -159,11 +159,6 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> allSedes() async {
-    final db = await instance.database;
-
-    final result = await db.rawQuery('SELECT * FROM sedes');
-  }
 
   Future<void> insertOrUpdateBeneficiario(
       BeneficiarioModel beneficiario) async {
@@ -175,12 +170,6 @@ class DatabaseHelper {
       conflictAlgorithm:
           ConflictAlgorithm.replace, // Si el ID existe, lo actualiza
     );
-  }
-
-  Future<void> allBeneficiarios() async {
-    final db = await instance.database;
-
-    final result = await db.rawQuery('SELECT * FROM benefiarios');
   }
 
   Future<void> insertOrUpdatePriorizacion(
@@ -195,12 +184,6 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> allPriorizacion() async {
-    final db = await instance.database;
-
-    final result = await db.rawQuery('SELECT * FROM priorizacion');
-  }
-
   Future<void> insertOrUpdateCalendar(CalendarModel calendar) async {
     final db = await instance.database;
 
@@ -212,18 +195,15 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> allCalendar() async {
-    final db = await instance.database;
-
-    final result = await db.rawQuery('SELECT * FROM calendar');
-  }
-
   Future<void> insertOrUpdateAsistenciaDet(CalendarModel calendar) async {
     final prefs = await SharedPreferences.getInstance();
     final String? userId = prefs.getString('user_id');
     final db = await instance.database;
     final List<Map<String, dynamic>> beneficiarios =
         await db.query('beneficiarios');
+
+    final String semana = calendar.semana;
+    await prefs.setString('last_week', semana); // Guardar la ultima semana que se sincronizó
 
     if (beneficiarios.isEmpty) return;
     final batch = db.batch();
@@ -251,17 +231,15 @@ class DatabaseHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<void> allAsistencia() async {
+
+  Future<void> cleanData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_week');
     final db = await instance.database;
-
-    final result = await db
-        .rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '1096540682'");
-  }
-
-  Future<void> getAsistenceByDoc(String numDoc) async {
-    final db = await instance.database;
-
-    final result = await db
-        .rawQuery("SELECT * FROM asistencia_det WHERE num_doc = '$numDoc' ");
+    await db.delete('sedes');
+    await db.delete('beneficiarios');
+    await db.delete('priorizacion');
+    await db.delete('calendar');
+    await db.delete('asistencia_det');
   }
 }

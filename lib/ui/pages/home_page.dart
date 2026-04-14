@@ -1,11 +1,9 @@
-import 'package:app_infopae/ui/pages/asistence_page.dart';
-import 'package:app_infopae/ui/pages/enviar_page.dart';
-import 'package:app_infopae/ui/pages/reportes_page.dart';
+import 'package:app_infopae/logic/cubits/asistencia_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
-import '../../data/models/user_model.dart';
-import 'download_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,22 +17,14 @@ class _HomePageState extends State<HomePage> {
   String _userName = "Usuario";
   String _userFoto = '';
   String _urlFoto = '';
-  int _selectedIndex = 0; // Controla cuál está seleccionado
-
-  // Esta lista DEBE tener el mismo orden que tus destinations
-  final List<Widget> _paginas = [
-    const HomePage(), // Índice 0
-    //const DownloadPage(),      // Índice 1 (La que crearemos)
-    const AsistenciaPage(), // Índice 2
-    ReportesPage(), // Índice 3
-    //const EnviarPage(),        // Índice 4
-    // El índice 5 (Salir) no necesita página, lo manejaremos con una función
-  ];
+  final int _selectedIndex = 0; // Controla cuál está seleccionado
+  bool isSameWeek = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+     context.read<AsistenciaCubit>().verificarPendientes(); 
   }
 
   // Cargamos el nombre que guardamos en SharedPreferences durante el Login
@@ -48,10 +38,18 @@ class _HomePageState extends State<HomePage> {
       if (_userFoto.trim().isNotEmpty) {
         String fotoLimpia = _userFoto.replaceAll('../../', '');
         if (_baseUrl != '') {
-          _urlFoto = _baseUrl + '/' + fotoLimpia;
+          _urlFoto = '$_baseUrl/$fotoLimpia';
         }
       }
     });
+
+    final lastWeek    = prefs.getString('last_week') ?? '';
+    final currentWeek = prefs.getString('current_week') ?? '';
+    isSameWeek = lastWeek.isNotEmpty &&
+                      currentWeek.isNotEmpty &&
+                      lastWeek == currentWeek;  
+
+                                  
   }
 
   @override
@@ -60,6 +58,7 @@ class _HomePageState extends State<HomePage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80.0),
         child: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: const Color(0xFF1a242e),
           // Eliminamos el espaciado interno por defecto para tener control total
           toolbarHeight: 80,
@@ -150,15 +149,36 @@ class _HomePageState extends State<HomePage> {
                 title: "Descarga Información",
                 subtitle: "Obtén el listado actualizado de beneficiarios.",
                 icon: Icons.cloud_download_rounded,
-                color: const Color(0XFF18a34c),
-                onTap: () => Navigator.pushNamed(context, '/download')),
+                color: isSameWeek 
+                  ? Colors.grey 
+                  : const Color(0XFF18a34c),
+                onTap: () {
+                  if (isSameWeek) {
+                    // Navigator.pushNamed(context, '/download'); // TODO: comentar despues hacer pruebas
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Esta semana ya fue sincronizada.'),
+                        backgroundColor: Colors.orange,
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  } else {
+                    Navigator.pushNamed(context, '/download');
+                  }
+                },
+            ), 
             _buildFeatureCard(
               title: "Toma Asistencia",
               subtitle:
                   "Registra la presencia de los beneficiarios en el comedor.",
               icon: Icons.how_to_reg_rounded,
               color: const Color(0XFF18a34c),
-              onTap: () => Navigator.pushNamed(context, '/asistencia'),
+              onTap: () {
+                final cubit = context.read<AsistenciaCubit>(); // 👈 Guardar antes del async
+                Navigator.pushNamed(context, '/asistencia').then((_) {
+                  cubit.verificarPendientes();
+                });
+              },
             ),
             _buildFeatureCard(
               title: "Consultar Reportes",
@@ -166,35 +186,67 @@ class _HomePageState extends State<HomePage> {
                   "Visualiza el resumen de asistencias y entregas realizadas.",
               icon: Icons.bar_chart_rounded,
               color: const Color(0XFF18a34c),
-              onTap: () => Navigator.pushNamed(context, '/reportes'),
+              onTap: () {
+                final cubit = context.read<AsistenciaCubit>();
+                Navigator.pushNamed(context, '/reportes').then((_) {
+                  cubit.verificarPendientes();
+                });
+              },
             ),
-            _buildFeatureCard(
-              title: "Envíar Información",
-              subtitle:
-                  "Sincroniza los datos recolectados con el servidor central.",
-              icon: Icons.cloud_upload_rounded,
-              color: const Color(0XFF18a34c),
-              onTap: () => Navigator.pushNamed(context, '/upload'),
-            ),
+           BlocBuilder<AsistenciaCubit, AsistenciaState>(
+              builder: (context, state) {
+                return Opacity(
+                  opacity: state.tienePendientes ? 0.4 : 1.0,
+                  child: _buildFeatureCard(
+                    title: "Envíar Información",
+                    subtitle: "Sincroniza los datos recolectados con el servidor central.",
+                    icon: Icons.cloud_upload_rounded,
+                    color: const Color(0XFF18a34c),
+                    onTap: () {
+                      if (state.tienePendientes) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('⚠️ Debes confirmar todos los registros antes de enviar.'),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      } else {
+                        Navigator.pushNamed(context, '/upload');
+                      }
+                    },
+                  ),
+                );
+              },
+            )
           ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex, // Marca el icono como activo
         onDestinationSelected: (int index) {
+          final cubit = context.read<AsistenciaCubit>();
           switch (index) {
             case 0:
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
               break;
             case 1:
-              Navigator.pushNamed(context, '/asistencia');
+              Navigator.pushNamed(context, '/asistencia').then((_) {
+                cubit.verificarPendientes(); 
+              });
               break;
             case 2:
-              Navigator.pushNamed(context, '/reportes');
+              Navigator.pushNamed(context, '/reportes').then((_) {
+                cubit.verificarPendientes();
+              });
               break;
             case 3:
               // Lógica de cerrar sesión
-              Navigator.pushNamed(context, '/login');
+              _cerrarSesion();
               break;
           }
         },
@@ -213,12 +265,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _cerrarSesion() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('session_date'); // 👈 Limpia la sesión del día
+
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false, // 👈 Limpia todo el stack, no puede volver al home
+    );
+  }
+
   Widget _buildFeatureCard({
     required String title,
     required String subtitle,
     required IconData icon,
     required Color color,
-    required VoidCallback onTap, // Agregamos el evento
+    VoidCallback? onTap, // Agregamos el evento
   }) {
     return Card(
       elevation: 4,
@@ -226,39 +290,13 @@ class _HomePageState extends State<HomePage> {
       child: ListTile(
         contentPadding: const EdgeInsets.all(15),
         leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
+          backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(icon, color: color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap, // Usamos el callback aquí
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Cerrar Sesión"),
-        content: const Text("¿Estás seguro de que deseas salir?"),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('is_logged_in'); // Limpiamos sesión activa
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/', (route) => false);
-              }
-            },
-            child: const Text("Salir", style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }

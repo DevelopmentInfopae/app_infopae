@@ -1,11 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/download_repository.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // --- 1. DEFINICIÓN DE ESTADOS ---
-// Puedes ponerlos aquí mismo o en un archivo aparte llamado download_state.dart
 abstract class DownloadState {}
 
 class DownloadInitial extends DownloadState {}
+
+class DownloadSinConexion extends DownloadState {}
 
 class DownloadInProgress extends DownloadState {
   final double progress;
@@ -25,10 +27,30 @@ class DownloadCubit extends Cubit<DownloadState> {
 
   DownloadCubit(this.repository) : super(DownloadInitial());
 
+  Future<bool> _tieneConexion() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+
+  Future<void> verificarConexion() async {
+    final conectado = await _tieneConexion();
+    if (!conectado) {
+      emit(DownloadSinConexion());
+    }
+  }
+
   // Ejemplo de cómo usarías la lógica más adelante:
   Future<void> iniciarDescarga() async {
+    final conectado = await _tieneConexion();
+    if (!conectado) {
+      emit(DownloadSinConexion());
+      return;
+    }
 
     try {
+      // Limpiar las tablas
+      await repository.cleanData();
+
       // 1. Inicio: 0%
       emit(DownloadInProgress(0.0));
 
@@ -55,10 +77,9 @@ class DownloadCubit extends Cubit<DownloadState> {
       // 2. Éxito Final: 100%
       emit(DownloadSuccess());
       
-    } catch (e, stack) {
-      print("💥 ERROR REAL: $e");
-      print(stack);
+    } catch (e) {
       emit(DownloadFailure("Error en la descarga: ${e.toString()}"));
     }
   }
+
 }

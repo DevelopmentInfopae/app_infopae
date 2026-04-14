@@ -138,7 +138,6 @@ class ApiProvider {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? baseUrl = prefs.getString('api_url');
-      final String? id = prefs.getString('user_id');
 
       if (baseUrl == null || baseUrl.isEmpty) {
         throw Exception("No se ha configurado un dominio de contrato.");
@@ -163,14 +162,40 @@ class ApiProvider {
 
   postAsistencia(List<Map<String, dynamic>> data) async {
     final prefs = await SharedPreferences.getInstance();
-    print(jsonEncode(data));
     final String? baseUrl = prefs.getString('api_url');
     final response = await http.post(
       Uri.parse('$baseUrl/modules/api/registrar_asistencia.php'),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(data),
     );
-    print("responsseeee  ${response.body}");
     if (response.statusCode != 200) throw Exception("Fallo en el servidor");
+  }
+
+  Future<String?> getCurrentWeek() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? baseUrl = prefs.getString('api_url');
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception("No se ha configurado un dominio de contrato.");
+      }
+      final response =
+          await http.get(Uri.parse('$baseUrl/modules/api/get_current_week.php'));
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> decodedData = json.decode(response.body);
+
+        Map<String, String> data = decodedData.cast<String, String>();
+        if (data["1"] != '') {
+          return data["1"];
+        }else{
+          return null;
+        }
+      } else {
+        throw Exception(
+            "Error al conectar con el servidor: ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Error de red: $e");
+    }
   }
 }

@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'data/database_helper.dart';
 import 'data/providers/api_provider.dart';
 import 'data/repositories/download_repository.dart';
@@ -74,11 +75,13 @@ void initInjections() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   initInjections();
-  runApp(const MyApp());
+  final initialRoute = await _getInitialRoute();
+  runApp(MyApp(initialRoute: initialRoute));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final String initialRoute;
+  const MyApp({Key? key, required this.initialRoute}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -90,14 +93,17 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.robotoTextTheme(),
       ),
       // Definimos la ruta inicial
-      initialRoute: '/',
+      initialRoute: initialRoute,
       // Mapa de rutas de la aplicación
       routes: {
-        '/': (context) => BlocProvider(
+        '/login': (context) => BlocProvider(
               create: (_) => LoginCubit(sl()),
               child: const LoginPage(),
             ),
-        '/home': (context) => const HomePage(),
+        '/home': (context) => BlocProvider(
+          create: (_) => sl<AsistenciaCubit>(),
+          child : const HomePage(),
+        ),
         '/download': (context) => BlocProvider(
               create: (_) => sl<DownloadCubit>(),
               child: const DownloadPage(),
@@ -108,13 +114,27 @@ class MyApp extends StatelessWidget {
             ),
         '/reportes': (context) => BlocProvider(
               create: (_) => sl<ReportesCubit>(),
-              child: ReportesPage(),
+              child: const ReportesPage(),
             ),
         '/upload': (context) => BlocProvider(
               create: (_) => sl<UploadCubit>(),
-              child: UploadPage(),
+              child: const UploadPage(),
             ),
       },
     );
+  }
+}
+
+Future<String> _getInitialRoute() async {
+  final prefs = await SharedPreferences.getInstance();
+  final sessionDate = prefs.getString('session_date') ?? '';
+  final hoy = DateTime.now().toIso8601String().substring(0, 10);
+
+  if (sessionDate == hoy) {
+    return '/home'; // 👈 Mismo día, va directo al home
+  } else {
+    // Limpia la sesión si es otro día
+    await prefs.remove('session_date');
+    return '/login';
   }
 }

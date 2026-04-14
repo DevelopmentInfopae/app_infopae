@@ -16,6 +16,7 @@ class AsistenciaState {
   final List<dynamic> diasConfirmados;
   final String? errorMessage;
   final List<dynamic> estudiantesSede;
+  final bool tienePendientes;
 
   AsistenciaState({
     this.isLoading = false,
@@ -30,6 +31,7 @@ class AsistenciaState {
     this.diasConfirmados = const [],
     this.errorMessage,
     this.estudiantesSede = const [],
+    this.tienePendientes = false,
   });
 
   // Método copyWith para actualizar solo lo que necesitemos
@@ -46,6 +48,7 @@ class AsistenciaState {
     List<dynamic>? diasConfirmados,
     String? errorMessage,
     List<dynamic>? estudiantesSede,
+    bool? tienePendientes,
   }) {
     return AsistenciaState(
       isLoading: isLoading ?? this.isLoading,
@@ -60,6 +63,7 @@ class AsistenciaState {
       diasConfirmados: diasConfirmados ?? this.diasConfirmados,
       errorMessage: errorMessage,
       estudiantesSede: estudiantesSede ?? this.estudiantesSede,
+      tienePendientes: tienePendientes ?? this.tienePendientes,
     );
   }
 }
@@ -291,8 +295,9 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
 
     for (final b in state.estudiantes) {
       final valor = b[dia] ?? 0;
-      if (valor == 0)
-        return false; // si uno no está marcado → NO están todos marcados
+      if (valor == 0) {
+        return false;
+      } // si uno no está marcado → NO están todos marcados
     }
 
     return true;
@@ -318,5 +323,31 @@ class AsistenciaCubit extends Cubit<AsistenciaState> {
       };
     }).toList();
     emit(state.copyWith(estudiantes: nuevaLista));
+  }
+
+  void desConfirmarDia(dia) async {
+    for (var est in state.estudiantes) {
+      await repository.updateAsistenciaLocalDesConfirmed(
+          est['tipo_doc'],
+          est['num_doc'],
+          est['tipo_complemento'],
+          dia['mes'],
+          dia['semana'],
+          dia['dia']);
+      }
+
+      final String keyConfirmacion = "confirmed_${dia['dia']}";
+      final nuevaLista = state.estudiantes.map((estudiante) {
+      return {
+        ...estudiante,
+        keyConfirmacion: 0,
+      };
+    }).toList();
+    emit(state.copyWith(estudiantes: nuevaLista));
+  }
+
+  Future<void> verificarPendientes() async {
+    final pendientes = await repository.tienePendientesPorConfirmar();
+    emit(state.copyWith(tienePendientes: pendientes));
   }
 }

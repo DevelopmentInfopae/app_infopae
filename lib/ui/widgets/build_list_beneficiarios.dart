@@ -25,7 +25,7 @@ class ListaEstudiantesWidget extends StatelessWidget {
               current
                   .estudiantesSede, // Solo reconstruye si cambia la data global
           builder: (context, state) {
-            final listaCompleta = state.estudiantesSede ?? [];
+            final listaCompleta = state.estudiantesSede;
             // 1. Sumamos el campo 'consumio' de TODA la sede/complemento en el state
             final int totalConsumido = listaCompleta.fold(0, (sum, e) {
               final valor = e['consumio'] ?? 0;
@@ -46,7 +46,7 @@ class ListaEstudiantesWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -89,70 +89,83 @@ class ListaEstudiantesWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: dias.map((dia) {
+                    final String keyConfirmacion = "confirmed_${dia['dia']}";
+                    final bool isConfirmed = estudiantes.every((e) {
+                      return e[keyConfirmacion] != null &&
+                          (e[keyConfirmacion] == 1 ||
+                              e[keyConfirmacion] == "1");
+                    });
+
                     // Tomamos la inicial del día
                     final String nomDia = dia['nomDia'][0].toUpperCase();
                     final marked = context
                         .read<AsistenciaCubit>()
                         .todosMarcados(dia['dia']);
-                    return GestureDetector(
-                      onTap: () {
-                        final marcadoAhora = context
-                            .read<AsistenciaCubit>()
-                            .todosMarcados(dia['dia']);
-
-                        if (marcadoAhora) {
-                          onCheckTapped("DESMARCAR_TODOS", dia);
-                          context
+                    return Opacity(
+                      opacity: isConfirmed ? 0.4 : 1.0,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (isConfirmed) {
+                            return;
+                          }
+                          final marcadoAhora = context
                               .read<AsistenciaCubit>()
-                              .desmarcarTodos(dia['dia']);
-                        } else {
-                          onCheckTapped("MARCAR_TODOS", dia);
-                          context
-                              .read<AsistenciaCubit>()
-                              .marcarTodos(dia['dia']);
-                        }
-                        // onCheckTapped(action, dia);
-                      },
-                      child: Container(
-                        width: 24,
-                        margin: const EdgeInsets.only(left: 6),
-                        child:
-                            Column(mainAxisSize: MainAxisSize.min, children: [
-                          Text(
-                            nomDia,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0XFF18a34c),
+                              .todosMarcados(dia['dia']);
+                    
+                          if (marcadoAhora) {
+                            onCheckTapped("DESMARCAR_TODOS", dia);
+                            context
+                                .read<AsistenciaCubit>()
+                                .desmarcarTodos(dia['dia']);
+                          } else {
+                            onCheckTapped("MARCAR_TODOS", dia);
+                            context
+                                .read<AsistenciaCubit>()
+                                .marcarTodos(dia['dia']);
+                          }
+                          // onCheckTapped(action, dia);
+                        },
+                        child: Container(
+                          width: 24,
+                          margin: const EdgeInsets.only(left: 6),
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            Text(
+                              nomDia,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0XFF18a34c),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Container(
-                            margin: const EdgeInsets.only(left: 1),
-                            width:
-                                24, // Lo hacemos un poco más grande para que sea fácil de tocar
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
+                            const SizedBox(height: 2),
+                            Container(
+                              margin: const EdgeInsets.only(left: 1),
+                              width:
+                                  24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                              height: 24,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: marked
+                                      ? const Color(0XFF18a34c)
+                                      : Colors.grey.shade300,
+                                  width: 1.5,
+                                ),
+                                color: marked
+                                    ? const Color(0XFF18a34c).withValues(alpha: 0.1)
+                                    : Colors.transparent,
+                              ),
+                              child: Icon(
+                                Icons.check,
+                                size: 14,
                                 color: marked
                                     ? const Color(0XFF18a34c)
-                                    : Colors.grey.shade300,
-                                width: 1.5,
+                                    : Colors.transparent,
                               ),
-                              color: marked
-                                  ? const Color(0XFF18a34c).withOpacity(0.1)
-                                  : Colors.transparent,
                             ),
-                            child: Icon(
-                              Icons.check,
-                              size: 14,
-                              color: marked
-                                  ? const Color(0XFF18a34c)
-                                  : Colors.transparent,
-                            ),
-                          ),
-                        ]),
+                          ]),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -207,37 +220,46 @@ class ListaEstudiantesWidget extends StatelessWidget {
                       // Aquí la lógica de si está marcado debe venir del objeto estudiante 'e'
                       // Por ahora usaremos una lógica de ejemplo:
                       bool asistio = false;
+                      bool confirmed = false;
                       if (e[dia['dia']] != null && e[dia['dia']] == 1) {
                         asistio = true;
                       }
 
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () =>
-                            onCheckTapped(e, dia), // Notificamos el click
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 6),
-                          width:
-                              24, // Lo hacemos un poco más grande para que sea fácil de tocar
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
+                      final confirmedKey = 'confirmed_${dia['dia']}'; // 👈 Construye la clave
+                      if (e[confirmedKey] != null && e[confirmedKey] == 1) {
+                        confirmed = true;
+                      }
+                      
+                      return Opacity(
+                        opacity: confirmed ? 0.4 : 1.0,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: confirmed ? null : () =>  // Si el día esta confirmado lo inhabilitamos
+                              onCheckTapped(e, dia), // Notificamos el click
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            width:
+                                24, // Lo hacemos un poco más grande para que sea fácil de tocar
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: asistio
+                                    ? const Color(0XFF18a34c)
+                                    : Colors.grey.shade300,
+                                width: 1.5,
+                              ),
+                              color: asistio
+                                  ? const Color(0XFF18a34c).withValues(alpha: 0.1)
+                                  : Colors.transparent,
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              size: 14,
                               color: asistio
                                   ? const Color(0XFF18a34c)
-                                  : Colors.grey.shade300,
-                              width: 1.5,
+                                  : Colors.transparent,
                             ),
-                            color: asistio
-                                ? const Color(0XFF18a34c).withOpacity(0.1)
-                                : Colors.transparent,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            size: 14,
-                            color: asistio
-                                ? const Color(0XFF18a34c)
-                                : Colors.transparent,
                           ),
                         ),
                       );
@@ -275,10 +297,10 @@ class ListaEstudiantesWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: dias.map((dia) {
-                    final String keyConfirmacion = "confirmed_${dia['dia']}";
 
                     // VALIDACIÓN: Verificamos si CADA estudiante tiene ese día confirmado
                     // .every devuelve true solo si todos cumplen la condición
+                    final String keyConfirmacion = "confirmed_${dia['dia']}";
                     final bool isConfirmed = estudiantes.every((e) {
                       return e[keyConfirmacion] != null &&
                           (e[keyConfirmacion] == 1 ||
@@ -290,7 +312,11 @@ class ListaEstudiantesWidget extends StatelessWidget {
 
                     return GestureDetector(
                       onTap: () {
-                        onCheckTapped("CONFIRMAR_DIA", dia);
+                        String action = "CONFIRMAR_DIA"; 
+                        if (isConfirmed) {
+                          action = "DESCONFIRMAR_DIA";
+                        }
+                        onCheckTapped(action, dia);
                       },
                       child: Container(
                         margin: const EdgeInsets.only(left: 6),

@@ -1,4 +1,4 @@
-import 'dart:ffi';
+import 'package:sqflite/sqflite.dart';
 
 import '../database_helper.dart';
 import '../providers/api_provider.dart';
@@ -252,5 +252,46 @@ class AsistenciaRepository {
           'tipo_doc = ? AND num_doc = ? AND complemento = ? AND mes = ? AND semana = ? AND dia = ?',
       whereArgs: [tipoDoc, numDoc, tipoComplemento, mes, semana, dia],
     );
+  }
+
+  Future<void> updateAsistenciaLocalDesConfirmed(
+    String tipoDoc,
+    String numDoc,
+    String tipoComplemento,
+    String mes,
+    String semana,
+    String dia,
+  ) async {
+    final db = await dbHelper.database;
+
+    await db.update(
+      'asistencia_det',
+      {
+        'confirmed': 0,
+      },
+      where:
+          'tipo_doc = ? AND num_doc = ? AND complemento = ? AND mes = ? AND semana = ? AND dia = ?',
+      whereArgs: [tipoDoc, numDoc, tipoComplemento, mes, semana, dia],
+    );
+  }
+
+  Future<bool> tienePendientesPorConfirmar() async {
+    final db = await dbHelper.database;
+
+     // Primero verificamos si hay datos en la tabla
+    final countResult = await db.rawQuery(
+      'SELECT COUNT(*) as total FROM asistencia_det'
+    );
+    final totalRegistros = Sqflite.firstIntValue(countResult) ?? 0;
+
+    // Si no hay datos, deshabilitamos el botón
+    if (totalRegistros == 0) return true;
+
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as total FROM asistencia_det WHERE confirmed = 0'
+    );
+
+    final total = Sqflite.firstIntValue(result) ?? 0;
+    return total > 0; // true = hay pendientes = deshabilitar
   }
 }

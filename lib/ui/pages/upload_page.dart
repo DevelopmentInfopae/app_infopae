@@ -2,8 +2,21 @@ import 'package:app_infopae/logic/cubits/upload_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class UploadPage extends StatelessWidget {
+class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
+
+  @override
+  State<UploadPage> createState() => _UploadPageState();
+}
+
+class _UploadPageState extends State<UploadPage> {
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<UploadCubit>().verificarConexion();
+  }
 
   @override
   Widget build(BuildContext context) {

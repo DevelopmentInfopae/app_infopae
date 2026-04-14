@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import '../database_helper.dart';
 import '../providers/api_provider.dart';
 
@@ -47,17 +45,15 @@ class ReportesRepository {
       for (var g in grupos) {
         final grado = g["cod_grado"];
         final grupo = g["nom_grupo"];
-        final nom_sede = g['nom_sede'];
 
         // 4️⃣ CONTAR ESTUDIANTES DEL GRUPO (para determinar si hay confirmación total)
-        final totalEstudiantesRow = await db.rawQuery("""
-        SELECT COUNT(*) AS total
-        FROM beneficiarios
-        WHERE cod_sede = ? AND cod_inst = ?
-          AND cod_grado = ? AND nom_grupo = ?
-      """, [codSede, codInst, grado, grupo]);
+      //   final totalEstudiantesRow = await db.rawQuery("""
+      //   SELECT COUNT(*) AS total
+      //   FROM beneficiarios
+      //   WHERE cod_sede = ? AND cod_inst = ?
+      //     AND cod_grado = ? AND nom_grupo = ?
+      // """, [codSede, codInst, grado, grupo]);
 
-        final totalEstudiantes = totalEstudiantesRow.first["total"] as int;
 
         // 5️⃣ PROCESAR DÍAS
         List<Map<String, dynamic>> diasProcesados = [];

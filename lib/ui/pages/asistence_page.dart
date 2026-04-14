@@ -32,8 +32,12 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
             padding: const EdgeInsets.all(16.0),
             child: Form(
               key: _formKey,
-              child: BlocBuilder<AsistenciaCubit, AsistenciaState>(
-                builder: (context, state) {
+              child: BlocConsumer <AsistenciaCubit, AsistenciaState>(
+                listener: (context, state) {
+                  // 👇 Aquí sí podemos llamar setState y callbacks sin problema
+                    _checkAutoSelect(state);
+                  },
+                    builder: (context, state) {
                   // Forzamos que isLoading sea tratado como bool siempre
                   final bool cargando = state.isLoading == true;
 
@@ -63,8 +67,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                             grupoId = null;
                             complementoId = null;
                           });
-                          if (val != null)
+                          if (val != null) {
                             context.read<AsistenciaCubit>().cargarSedes(val);
+                          }
                         }),
 
                         // Dropdown de Sedes
@@ -78,8 +83,9 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                             grupoId = null;
                             complementoId = null;
                           }); // Este será el cod_sede
-                          if (val != null)
+                          if (val != null) {
                             context.read<AsistenciaCubit>().cargarGrados(val);
+                          }
                         }),
 
                         // 3. GRADOS
@@ -92,10 +98,11 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                             grupoId = null;
                             complementoId = null;
                           });
-                          if (val != null && sedeId != null)
+                          if (val != null && sedeId != null) {
                             context
                                 .read<AsistenciaCubit>()
                                 .cargarGrupos(sedeId!, val);
+                          }
                         }),
 
                         // 3. GRUPO
@@ -172,8 +179,13 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                       if (estudiante == "CONFIRMAR_DIA") {
                         // 2. AQUÍ usas la función del Cubit
                         context.read<AsistenciaCubit>().confirmarDia(dia);
-                      } else {
+                      }else if(estudiante == "DESCONFIRMAR_DIA"){
+                        context.read<AsistenciaCubit>().desConfirmarDia(dia);
+                      }
+                      
+                      else {
                         // Aquí llamas a tu Cubit para guardar la asistencia
+                        final cubit = context.read<AsistenciaCubit>();
                         await context
                             .read<AsistenciaCubit>()
                             .toggleAsistencia(estudiante, dia);
@@ -183,7 +195,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
                           if (instId != null &&
                               sedeId != null &&
                               complementoId != null) {
-                            context.read<AsistenciaCubit>().reloadConsumos(
+                            cubit.reloadConsumos(
                                 institucion: instId!,
                                 sede: sedeId!,
                                 complemento: complementoId!);
@@ -253,6 +265,7 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: DropdownButtonFormField<String>(
+        // ignore: deprecated_member_use
         value: existe ? currentValue : null,
         isExpanded: true,
         alignment: AlignmentDirectional.centerStart,
@@ -315,6 +328,62 @@ class _AsistenciaPageState extends State<AsistenciaPage> {
       ),
     );
   }
+
+  void _checkAutoSelect(AsistenciaState state) {
+  // Auto-select Institución
+  if (state.instituciones.length == 1 && instId == null) {
+    final id = _extractId(state.instituciones.first);
+    if (id.isNotEmpty) {
+      setState(() => instId = id);
+      context.read<AsistenciaCubit>().cargarSedes(id);
+    }
+  }
+
+  // Auto-select Sede
+  if (state.sedes.length == 1 && sedeId == null) {
+    final id = _extractId(state.sedes.first);
+    if (id.isNotEmpty) {
+      setState(() => sedeId = id);
+      context.read<AsistenciaCubit>().cargarGrados(id);
+    }
+  }
+
+  // Auto-select Grado
+  if (state.grados.length == 1 && gradoId == null) {
+    final id = _extractId(state.grados.first);
+    if (id.isNotEmpty) {
+      setState(() => gradoId = id);
+      context.read<AsistenciaCubit>().cargarGrupos(sedeId!, id);
+    }
+  }
+
+  // Auto-select Grupo
+  if (state.grupos.length == 1 && grupoId == null) {
+    final id = _extractId(state.grupos.first);
+    if (id.isNotEmpty) {
+      setState(() => grupoId = id);
+      context.read<AsistenciaCubit>().cargarComplementos(sedeId!, gradoId!, id);
+    }
+  }
+
+  // Auto-select Complemento
+  if (state.complementos.length == 1 && complementoId == null) {
+    final id = _extractId(state.complementos.first);
+    if (id.isNotEmpty) {
+      setState(() => complementoId = id);
+    }
+  }
+}
+
+// Helper para extraer el id de un item
+String _extractId(Map<String, dynamic> item) {
+  return item['tipo_complemento'] ??
+      item['nom_grupo'] ??
+      item['cod_grado'] ??
+      item['cod_sede']?.toString() ??
+      item['cod_inst']?.toString() ??
+      '';
+}
 
   void _ejecutarFiltro() {
     if (_formKey.currentState!.validate()) {

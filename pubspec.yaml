@@ -31,6 +31,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  connectivity_plus: ^5.0.2
   # Gestión de estado (Cubit es ideal para lo que buscas)
   flutter_bloc: ^8.1.1
   
@@ -39,13 +40,13 @@ dependencies:
   path: ^1.8.2
   
   # Peticiones al backend
-  http: ^0.13.5
+  http: ^1.6.0
   
   # Inyección de dependencias (para conectar capas fácilmente)
   get_it: ^7.2.0
 
   cupertino_icons: ^1.0.2
-  google_fonts: ^4.0.4
+  google_fonts: ^6.2.1
   shared_preferences: ^2.0.15
   crypto: ^3.0.2
 
@@ -62,8 +63,15 @@ flutter_icons:
   # Esto soluciona el icono en blanco en Android moderno:
   adaptive_icon_background: "#FFFFFF" # O el color principal de tu marca
   adaptive_icon_foreground: "assets/logos/logo_app.png"
+  min_sdk_android: 19
+  web:
+    generate: false
+  adaptive_icon_margin: 25
 
 flutter:
   uses-material-design: true
   assets:
     - assets/logos/logo.png
+
+dependency_overrides:
+  win32: ^5.5.4  # 👈     

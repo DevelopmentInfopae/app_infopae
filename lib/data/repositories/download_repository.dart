@@ -41,4 +41,8 @@ class DownloadRepository {
       await dbHelper.insertOrUpdateAsistenciaDet(calendar);
     }
   }
+
+  Future<void> cleanData() async{
+    await dbHelper.cleanData();
+  }
 }

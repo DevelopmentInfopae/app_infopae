@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 import '../database_helper.dart';
 import '../models/user_model.dart';
 import '../providers/api_provider.dart';
-import 'dart:convert'; // Para utf8.encode
 import 'package:crypto/crypto.dart'; // Para sha1
 
 class UserRepository {
@@ -34,6 +34,15 @@ class UserRepository {
     }
   }
 
+  Future<bool> tieneAsistenciaPendiente() async {
+    final db = await dbHelper.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as total FROM asistencia_det'
+    );
+    final total = Sqflite.firstIntValue(result) ?? 0;
+    return total > 0;
+  }
+
   Future<String?> getTenantDomain(String email) async {
     try {
       // La URL de tu archivo PHP puro en el servidor central
@@ -46,7 +55,7 @@ class UserRepository {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['status'] == 'success') {
           final String dominio = data['dominio'];
           
@@ -59,8 +68,17 @@ class UserRepository {
       }
       return null; // Si el usuario no existe o hay error
     } catch (e) {
-      print("Error consultando el central: $e");
+
       return null;
+    }
+  }
+
+  Future<String> getCurrentWeek() async {
+    final String? currentWeek = await apiProvider.getCurrentWeek();
+    if (currentWeek != null) {
+      return currentWeek;
+    }else {
+      return '';
     }
   }
 }

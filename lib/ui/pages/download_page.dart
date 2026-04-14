@@ -3,8 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/cubits/download_cubit.dart';
 // ... tus otros imports
 
-class DownloadPage extends StatelessWidget {
+class DownloadPage extends StatefulWidget {
   const DownloadPage({super.key});
+
+  @override
+  State<DownloadPage> createState() => _DownloadPageState();
+}
+
+class _DownloadPageState extends State<DownloadPage> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    context.read<DownloadCubit>().verificarConexion();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +36,34 @@ class DownloadPage extends StatelessWidget {
             Navigator.pushReplacementNamed(context, '/home');
           }
         },
-        child: BlocBuilder<DownloadCubit, DownloadState>(
+        child: BlocConsumer<DownloadCubit, DownloadState>(
+            listener: (context, state) {
+              if (state is DownloadSinConexion) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('❌ Sin conexión a internet. No es posible sincronizar.'),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              }
+              if (state is DownloadSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('✅ Descarga completada exitosamente.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+              if (state is DownloadFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('💥 ${(state).error}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
           builder: (context, state) {
             double globalProgress = 0.0;
             if (state is DownloadInProgress) globalProgress = state.progress;

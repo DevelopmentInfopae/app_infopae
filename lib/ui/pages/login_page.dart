@@ -29,6 +29,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Color(colorFondo),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -133,6 +134,18 @@ class _LoginPageState extends State<LoginPage> {
                             SnackBar(content: Text(state.message), backgroundColor: Colors.red.shade400),
                           );
                         }
+
+                         if (state is LoginUsuarioDiferente) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(state.mensaje),
+                                backgroundColor: Colors.orange.shade700,
+                                duration: const Duration(seconds: 5), // 👈 Más tiempo para leer
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+
                         if (state is LoginSuccess) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Ingreso Exitoso"), backgroundColor: Colors.green),
@@ -162,9 +175,9 @@ class _LoginPageState extends State<LoginPage> {
                                 _passwordController.text
                               );
                             },
-                            child: Row(
+                            child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children:  [
                                 Text(
                                   "INICIAR SESIÓN",
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -181,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 15,),
                     TextButton(
                       onPressed: (){
-                        print("recuperación de contraseña");
+
                       }, 
                       child: const Text(
                         "¿Olvidó su contraseña?",
@@ -205,14 +218,14 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   "Control de Entregas",
                   style: TextStyle(
-                    color: const Color(colorLetra).withOpacity(0.7),
+                    color: const Color(colorLetra).withValues(alpha: 0.7),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   "Versión 1.0.0",
                   style: TextStyle(
-                    color: const Color(colorLetra).withOpacity(0.5),
+                    color: const Color(colorLetra).withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
