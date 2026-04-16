@@ -7,5 +7,14 @@
     ],
     "files.trimTrailingWhitespace": true,
     "dart.flutterSdkPath": ".fvm/flutter_sdk",
-    "dart.sdkPath": ".fvm/flutter_sdk/bin/cache/dart-sdk"
+    "dart.sdkPath": ".fvm/flutter_sdk/bin/cache/dart-sdk",
+
+    "[dart]": {
+        "editor.formatOnSave": true,
+        "editor.selectionHighlight": false,
+        "editor.suggest.snippetsPreventQuickSuggestions": false,
+        "editor.suggestSelection": "recentlyUsed",
+        "editor.tabCompletion": "on",
+        "editor.wordBasedSuggestions": "off"
+    }
 }

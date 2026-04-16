@@ -93,6 +93,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY,
         tipo_doc TEXT NOT NULL,
         num_doc TEXT NOT NULL,
+        cod_sede TEXT NOT NULL,
         dia TEXT NOT NULL,
         semana TEXT NOT NULL,
         mes TEXT NOT NULL,
@@ -159,7 +160,6 @@ class DatabaseHelper {
     );
   }
 
-
   Future<void> insertOrUpdateBeneficiario(
       BeneficiarioModel beneficiario) async {
     final db = await instance.database;
@@ -203,7 +203,8 @@ class DatabaseHelper {
         await db.query('beneficiarios');
 
     final String semana = calendar.semana;
-    await prefs.setString('last_week', semana); // Guardar la ultima semana que se sincronizó
+    await prefs.setString(
+        'last_week', semana); // Guardar la ultima semana que se sincronizó
 
     if (beneficiarios.isEmpty) return;
     final batch = db.batch();
@@ -214,6 +215,7 @@ class DatabaseHelper {
         {
           'tipo_doc': beneficiario['tipo_doc'],
           'num_doc': beneficiario['num_doc'],
+          'cod_sede': beneficiario['cod_sede'],
           'dia': calendar.dia,
           'semana': calendar.semana,
           'mes': calendar.mes,
@@ -230,7 +232,6 @@ class DatabaseHelper {
     }
     await batch.commit(noResult: true);
   }
-
 
   Future<void> cleanData() async {
     final prefs = await SharedPreferences.getInstance();

@@ -113,6 +113,7 @@ class ReportesPage extends StatelessWidget {
       child: AppBar(
         backgroundColor: const Color(0xFF1a242e),
         toolbarHeight: 80,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Container(
           height: 80,
           alignment: Alignment.centerLeft,

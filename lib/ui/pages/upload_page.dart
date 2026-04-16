@@ -10,7 +10,6 @@ class UploadPage extends StatefulWidget {
 }
 
 class _UploadPageState extends State<UploadPage> {
-
   @override
   void initState() {
     // TODO: implement initState
@@ -20,43 +19,54 @@ class _UploadPageState extends State<UploadPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: BlocListener<UploadCubit, UploadState>(
-        listener: (context, state) {
-          if (state is UploadSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('¡Asistencia enviada con éxito!'),
-                  backgroundColor: Color(0XFF18a34c)),
-            );
-            Navigator.pushReplacementNamed(context, '/home');
-          }
-          if (state is UploadFailure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error), backgroundColor: Colors.red),
-            );
-          }
-        },
-        child: BlocBuilder<UploadCubit, UploadState>(
-          builder: (context, state) {
-            double globalProgress = 0.0;
-            if (state is UploadInProgress) globalProgress = state.progress;
-            if (state is UploadSuccess) globalProgress = 1.0;
+    return BlocBuilder<UploadCubit, UploadState>(
+      builder: (context, state) {
+        final isLoading = state is UploadInProgress;
+        return PopScope(
+          canPop: !isLoading,
+          child: Scaffold(
+            appBar: _buildAppBar(),
+            body: BlocListener<UploadCubit, UploadState>(
+              listener: (context, state) {
+                if (state is UploadSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('¡Asistencia enviada con éxito!'),
+                        backgroundColor: Color(0XFF18a34c)),
+                  );
+                  Navigator.pushReplacementNamed(context, '/home');
+                }
+                if (state is UploadFailure) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(state.error),
+                        backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: BlocBuilder<UploadCubit, UploadState>(
+                builder: (context, state) {
+                  double globalProgress = 0.0;
+                  if (state is UploadInProgress)
+                    globalProgress = state.progress;
+                  if (state is UploadSuccess) globalProgress = 1.0;
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  _buildMainActionCard(context, state, globalProgress),
-                  const SizedBox(height: 20),
-                  _buildDetailsCard(state),
-                ],
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        _buildMainActionCard(context, state, globalProgress),
+                        const SizedBox(height: 20),
+                        _buildDetailsCard(state),
+                      ],
+                    ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -66,6 +76,7 @@ class _UploadPageState extends State<UploadPage> {
       child: AppBar(
         backgroundColor: const Color(0xFF1a242e),
         toolbarHeight: 80,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Container(
           height: 80,
           alignment: Alignment.centerLeft,

@@ -128,8 +128,8 @@ class AsistenciaRepository {
   Future<List<Map<String, dynamic>>> getInstituciones() async {
     final db = await dbHelper.database;
     return await db.rawQuery('''
-      SELECT DISTINCT cod_inst, nom_inst 
-      FROM sedes 
+      SELECT DISTINCT cod_inst, nom_inst
+      FROM sedes
       ORDER BY nom_inst ASC
     ''');
   }
@@ -146,8 +146,8 @@ class AsistenciaRepository {
     final db = await dbHelper.database;
     final List<Map<String, dynamic>> res = await db.rawQuery('''
       SELECT DISTINCT cod_grado, cod_grado
-      FROM beneficiarios 
-      WHERE cod_sede = ? 
+      FROM beneficiarios
+      WHERE cod_sede = ?
       ORDER BY CAST(cod_grado AS INTEGER) ASC
     ''', [codSede]);
 
@@ -166,8 +166,8 @@ class AsistenciaRepository {
     final db = await dbHelper.database;
     return await db.rawQuery('''
       SELECT DISTINCT nom_grupo, nom_grupo
-      FROM beneficiarios 
-      WHERE cod_sede = ? 
+      FROM beneficiarios
+      WHERE cod_sede = ?
       AND cod_grado = ?
       ORDER BY CAST(nom_grupo AS INTEGER) ASC
     ''', [codSede, codGrado]);
@@ -199,8 +199,8 @@ class AsistenciaRepository {
     final db = await dbHelper.database;
     return await db.rawQuery('''
       SELECT DISTINCT tipo_complemento, tipo_complemento
-      FROM beneficiarios 
-      WHERE cod_sede = ? 
+      FROM beneficiarios
+      WHERE cod_sede = ?
       AND cod_grado = ?
       AND nom_grupo = ?
       ORDER BY tipo_complemento ASC
@@ -278,18 +278,37 @@ class AsistenciaRepository {
   Future<bool> tienePendientesPorConfirmar() async {
     final db = await dbHelper.database;
 
-     // Primero verificamos si hay datos en la tabla
-    final countResult = await db.rawQuery(
-      'SELECT COUNT(*) as total FROM asistencia_det'
-    );
+    // Primero verificamos si hay datos en la tabla
+    final countResult =
+        await db.rawQuery('SELECT COUNT(*) as total FROM asistencia_det');
     final totalRegistros = Sqflite.firstIntValue(countResult) ?? 0;
 
     // Si no hay datos, deshabilitamos el botón
     if (totalRegistros == 0) return true;
 
     final result = await db.rawQuery(
-      'SELECT COUNT(*) as total FROM asistencia_det WHERE confirmed = 0'
-    );
+        'SELECT COUNT(*) as total FROM asistencia_det WHERE confirmed = 0');
+
+    // final List<Map<String, dynamic>> result = await db.query(
+    //   'asistencia_det',
+    //   where: 'confirmed = ?',
+    //   whereArgs: [0],
+    // );
+
+    // // --- BLOQUE DE DEBUG ---
+    // if (result.isNotEmpty) {
+    //   print("---------------------------------------------------------");
+    //   print("⚠️ DEBUG: SE ENCONTRARON ${result.length} REGISTROS PENDIENTES");
+    //   for (var row in result) {
+    //     // Ajusta los nombres de las columnas según tu tabla (ej. estudiante_id, dia, etc.)
+    //     print(
+    //         "ID: ${row['id']} | Estudiante: ${row['num_doc']} | Día: ${row['dia']} | Confirmed: ${row['confirmed']}");
+    //   }
+    //   print("---------------------------------------------------------");
+    // } else {
+    //   print("✅ DEBUG: Todos los registros están confirmados.");
+    // }
+    // -----------------------
 
     final total = Sqflite.firstIntValue(result) ?? 0;
     return total > 0; // true = hay pendientes = deshabilitar

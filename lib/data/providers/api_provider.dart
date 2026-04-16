@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:app_infopae/data/models/beneficiario_model.dart';
 import 'package:app_infopae/data/models/calendar_model.dart';
 import 'package:app_infopae/data/models/priorizacion_model.dart';
@@ -78,25 +80,31 @@ class ApiProvider {
         throw Exception("No se ha configurado un dominio de contrato.");
       }
 
-      final uri =
-          Uri.parse('$baseUrl/modules/api/get_beneficiarios.php').replace(
-        queryParameters: {
-          'id': id,
-        },
-      );
+      final uri = Uri.parse('$baseUrl/modules/api/get_beneficiarios.php')
+          .replace(queryParameters: {'id': id});
 
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-
         return data.map((sede) => BeneficiarioModel.fromMap(sede)).toList();
       } else {
+        final body = json.decode(response.body);
+        final error = body['error'];
         throw Exception(
-            "Error al conectar con el servidor: ${response.statusCode}");
+            "El servidor respondió con un error ($error), intenta más tarde.");
       }
+    } on SocketException {
+      throw Exception(
+          "Sin conexión a internet. Verifica tu red e intenta de nuevo.");
+    } on TimeoutException {
+      throw Exception(
+          "El servidor tardó demasiado en responder. Intenta de nuevo.");
+    } on FormatException {
+      throw Exception(
+          "La respuesta del servidor no es válida. Contacta al administrador.");
     } catch (e) {
-      throw Exception(e.toString());
+      throw Exception("Ocurrió un error inesperado: ${e.toString()}");
     }
   }
 
@@ -176,10 +184,12 @@ class ApiProvider {
       final prefs = await SharedPreferences.getInstance();
       final String? baseUrl = prefs.getString('api_url');
       if (baseUrl == null || baseUrl.isEmpty) {
-        throw Exception("No se ha configurado un dominio de contrato.");
+        return null;
       }
-      final response =
-          await http.get(Uri.parse('$baseUrl/modules/api/get_current_week.php'));
+
+      final response = await http
+          .get(Uri.parse('$baseUrl/modules/api/get_current_week.php'))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         Map<String, dynamic> decodedData = json.decode(response.body);
@@ -187,15 +197,19 @@ class ApiProvider {
         Map<String, String> data = decodedData.cast<String, String>();
         if (data["1"] != '') {
           return data["1"];
-        }else{
+        } else {
           return null;
         }
       } else {
         throw Exception(
             "Error al conectar con el servidor: ${response.statusCode}");
       }
+    } on SocketException {
+      return null; // ✅ sin internet
+    } on TimeoutException {
+      return null; // ✅ servidor no responde
     } catch (e) {
-      throw Exception("Error de red: $e");
+      return null; // ✅ cualquier otro error
     }
   }
 }

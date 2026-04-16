@@ -1,4 +1,5 @@
 import 'package:app_infopae/data/providers/api_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database_helper.dart';
 
@@ -21,7 +22,13 @@ class UploadRepository {
     // 2. Enviamos a la API
     await apiProvider.postAsistencia(asistenciaLocal);
 
-    // 3. Opcional: Marcar como confirmados localmente para no reenviar
-    // await db.update('asistencia_det', {'confirmed': 1});
+    // 3. Si todo sale bien entonces limpiamos las tablas y los datos
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('last_week');
+    await db.delete('sedes');
+    await db.delete('beneficiarios');
+    await db.delete('priorizacion');
+    await db.delete('calendar');
+    await db.delete('asistencia_det');
   }
 }

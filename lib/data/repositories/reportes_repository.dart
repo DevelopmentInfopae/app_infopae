@@ -34,7 +34,7 @@ class ReportesRepository {
 
       // 3️⃣ OBTENER GRADOS/GRUPOS DE ESA SEDE
       final grupos = await db.rawQuery("""
-      SELECT DISTINCT cod_grado, nom_grupo, nom_sede
+      SELECT DISTINCT cod_grado, nom_grupo, nom_sede, tipo_complemento
       FROM beneficiarios
       WHERE cod_sede = ? AND cod_inst = ?
       ORDER BY CAST(cod_grado AS INTEGER) ASC, CAST(nom_grupo AS INTEGER) ASC
@@ -45,15 +45,15 @@ class ReportesRepository {
       for (var g in grupos) {
         final grado = g["cod_grado"];
         final grupo = g["nom_grupo"];
+        final complemento = g["tipo_complemento"];
 
         // 4️⃣ CONTAR ESTUDIANTES DEL GRUPO (para determinar si hay confirmación total)
-      //   final totalEstudiantesRow = await db.rawQuery("""
-      //   SELECT COUNT(*) AS total
-      //   FROM beneficiarios
-      //   WHERE cod_sede = ? AND cod_inst = ?
-      //     AND cod_grado = ? AND nom_grupo = ?
-      // """, [codSede, codInst, grado, grupo]);
-
+        //   final totalEstudiantesRow = await db.rawQuery("""
+        //   SELECT COUNT(*) AS total
+        //   FROM beneficiarios
+        //   WHERE cod_sede = ? AND cod_inst = ?
+        //     AND cod_grado = ? AND nom_grupo = ?
+        // """, [codSede, codInst, grado, grupo]);
 
         // 5️⃣ PROCESAR DÍAS
         List<Map<String, dynamic>> diasProcesados = [];
@@ -67,7 +67,7 @@ class ReportesRepository {
           final confirmadosRow = await db.rawQuery("""
           SELECT COUNT(*) AS confirmados
           FROM asistencia_det ad
-          JOIN beneficiarios b 
+          JOIN beneficiarios b
                ON b.num_doc = ad.num_doc
           WHERE ad.dia = ?
             AND ad.semana = ?
@@ -76,19 +76,23 @@ class ReportesRepository {
             AND b.cod_inst = ?
             AND b.cod_grado = ?
             AND b.nom_grupo = ?
+            AND b.tipo_complemento = ?
             AND ad.confirmed = 1
-        """, [dia, semana, mes, codSede, codInst, grado, grupo]);
+        """, [dia, semana, mes, codSede, codInst, grado, grupo, complemento]);
 
           final confirmados = confirmadosRow.first["confirmados"] as int;
 
+          final textDia = d["nomDia"] as String? ?? "";
+          String textDiaProcesdo =
+              textDia[0].toUpperCase() + textDia.substring(1);
           diasProcesados.add({
-            "dia": d["nomDia"],
+            "dia": textDiaProcesdo,
             "confirmado": confirmados > 0, // puede ser "todos" si quieres
           });
         }
 
         gruposProcesados.add({
-          "grupo": " ${nombresGrados[grado]} - $grupo",
+          "grupo": " ${nombresGrados[grado]} - $grupo ($complemento)",
           "dias": diasProcesados,
         });
       }

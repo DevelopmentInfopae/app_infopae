@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -24,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _loadUserInfo();
-     context.read<AsistenciaCubit>().verificarPendientes(); 
+    context.read<AsistenciaCubit>().verificarPendientes();
   }
 
   // Cargamos el nombre que guardamos en SharedPreferences durante el Login
@@ -43,13 +42,11 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    final lastWeek    = prefs.getString('last_week') ?? '';
+    final lastWeek = prefs.getString('last_week') ?? '';
     final currentWeek = prefs.getString('current_week') ?? '';
     isSameWeek = lastWeek.isNotEmpty &&
-                      currentWeek.isNotEmpty &&
-                      lastWeek == currentWeek;  
-
-                                  
+        currentWeek.isNotEmpty &&
+        lastWeek == currentWeek;
   }
 
   @override
@@ -133,93 +130,99 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Hola, $_userName 👋",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text("Bienvenido al panel central de InfoPAE."),
-            const SizedBox(height: 30),
-            _buildFeatureCard(
-                title: "Descarga Información",
-                subtitle: "Obtén el listado actualizado de beneficiarios.",
-                icon: Icons.cloud_download_rounded,
-                color: isSameWeek 
-                  ? Colors.grey 
-                  : const Color(0XFF18a34c),
-                onTap: () {
-                  if (isSameWeek) {
-                    // Navigator.pushNamed(context, '/download'); // TODO: comentar despues hacer pruebas
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ Esta semana ya fue sincronizada.'),
-                        backgroundColor: Colors.orange,
-                        duration: Duration(seconds: 3),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Hola, $_userName 👋",
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                const Text("Bienvenido al panel central de InfoPAE."),
+                const SizedBox(height: 30),
+                _buildFeatureCard(
+                  title: "Descarga Información",
+                  subtitle: "Obtén el listado actualizado de beneficiarios.",
+                  icon: Icons.cloud_download_rounded,
+                  color: isSameWeek ? Colors.grey : const Color(0XFF18a34c),
+                  onTap: () {
+                    if (isSameWeek) {
+                      // Navigator.pushNamed(context, '/download'); // TODO: comentar despues hacer pruebas
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Esta semana ya fue sincronizada.'),
+                          backgroundColor: Colors.orange,
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    } else {
+                      Navigator.pushNamed(context, '/download');
+                    }
+                  },
+                ),
+                _buildFeatureCard(
+                  title: "Toma Asistencia",
+                  subtitle:
+                      "Registra la presencia de los beneficiarios en el comedor.",
+                  icon: Icons.how_to_reg_rounded,
+                  color: const Color(0XFF18a34c),
+                  onTap: () {
+                    final cubit = context
+                        .read<AsistenciaCubit>(); // 👈 Guardar antes del async
+                    Navigator.pushNamed(context, '/asistencia').then((_) {
+                      cubit.verificarPendientes();
+                    });
+                  },
+                ),
+                _buildFeatureCard(
+                  title: "Consultar Reportes",
+                  subtitle:
+                      "Visualiza el resumen de asistencias y entregas realizadas.",
+                  icon: Icons.bar_chart_rounded,
+                  color: const Color(0XFF18a34c),
+                  onTap: () {
+                    final cubit = context.read<AsistenciaCubit>();
+                    Navigator.pushNamed(context, '/reportes').then((_) {
+                      cubit.verificarPendientes();
+                    });
+                  },
+                ),
+                BlocBuilder<AsistenciaCubit, AsistenciaState>(
+                  builder: (context, state) {
+                    return Opacity(
+                      opacity: state.tienePendientes ? 0.4 : 1.0,
+                      child: _buildFeatureCard(
+                        title: "Envíar Información",
+                        subtitle:
+                            "Sincroniza los datos recolectados con el servidor central.",
+                        icon: Icons.cloud_upload_rounded,
+                        color: const Color(0XFF18a34c),
+                        onTap: () {
+                          if (state.tienePendientes) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    '⚠️ Debes confirmar todos los registros antes de enviar.'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                          } else {
+                            Navigator.pushNamed(context, '/upload');
+                          }
+                        },
                       ),
                     );
-                  } else {
-                    Navigator.pushNamed(context, '/download');
-                  }
-                },
-            ), 
-            _buildFeatureCard(
-              title: "Toma Asistencia",
-              subtitle:
-                  "Registra la presencia de los beneficiarios en el comedor.",
-              icon: Icons.how_to_reg_rounded,
-              color: const Color(0XFF18a34c),
-              onTap: () {
-                final cubit = context.read<AsistenciaCubit>(); // 👈 Guardar antes del async
-                Navigator.pushNamed(context, '/asistencia').then((_) {
-                  cubit.verificarPendientes();
-                });
-              },
+                  },
+                )
+              ],
             ),
-            _buildFeatureCard(
-              title: "Consultar Reportes",
-              subtitle:
-                  "Visualiza el resumen de asistencias y entregas realizadas.",
-              icon: Icons.bar_chart_rounded,
-              color: const Color(0XFF18a34c),
-              onTap: () {
-                final cubit = context.read<AsistenciaCubit>();
-                Navigator.pushNamed(context, '/reportes').then((_) {
-                  cubit.verificarPendientes();
-                });
-              },
-            ),
-           BlocBuilder<AsistenciaCubit, AsistenciaState>(
-              builder: (context, state) {
-                return Opacity(
-                  opacity: state.tienePendientes ? 0.4 : 1.0,
-                  child: _buildFeatureCard(
-                    title: "Envíar Información",
-                    subtitle: "Sincroniza los datos recolectados con el servidor central.",
-                    icon: Icons.cloud_upload_rounded,
-                    color: const Color(0XFF18a34c),
-                    onTap: () {
-                      if (state.tienePendientes) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('⚠️ Debes confirmar todos los registros antes de enviar.'),
-                            backgroundColor: Colors.orange,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      } else {
-                        Navigator.pushNamed(context, '/upload');
-                      }
-                    },
-                  ),
-                );
-              },
-            )
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -236,7 +239,7 @@ class _HomePageState extends State<HomePage> {
               break;
             case 1:
               Navigator.pushNamed(context, '/asistencia').then((_) {
-                cubit.verificarPendientes(); 
+                cubit.verificarPendientes();
               });
               break;
             case 2:

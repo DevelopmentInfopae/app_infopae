@@ -34,7 +34,12 @@ class ListaEstudiantesWidget extends StatelessWidget {
             });
 
             // 2. Obtenemos el total de beneficiarios de esa sede
+            final int countDias = dias.length;
             final int totalBeneficiarios = listaCompleta.length;
+            late int priorizacionTotal = 0;
+            if (countDias > 0 && totalBeneficiarios > 0) {
+              priorizacionTotal = countDias * totalBeneficiarios;
+            }
 
             return Center(
               child: Container(
@@ -53,7 +58,7 @@ class ListaEstudiantesWidget extends StatelessWidget {
                   ],
                 ),
                 child: Text(
-                  "$totalConsumido de $totalBeneficiarios", // <--- Valores dinámicos
+                  "$totalConsumido de $priorizacionTotal", // <--- Valores dinámicos
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -111,7 +116,7 @@ class ListaEstudiantesWidget extends StatelessWidget {
                           final marcadoAhora = context
                               .read<AsistenciaCubit>()
                               .todosMarcados(dia['dia']);
-                    
+
                           if (marcadoAhora) {
                             onCheckTapped("DESMARCAR_TODOS", dia);
                             context
@@ -153,7 +158,8 @@ class ListaEstudiantesWidget extends StatelessWidget {
                                   width: 1.5,
                                 ),
                                 color: marked
-                                    ? const Color(0XFF18a34c).withValues(alpha: 0.1)
+                                    ? const Color(0XFF18a34c)
+                                        .withValues(alpha: 0.1)
                                     : Colors.transparent,
                               ),
                               child: Icon(
@@ -225,17 +231,20 @@ class ListaEstudiantesWidget extends StatelessWidget {
                         asistio = true;
                       }
 
-                      final confirmedKey = 'confirmed_${dia['dia']}'; // 👈 Construye la clave
+                      final confirmedKey =
+                          'confirmed_${dia['dia']}'; // 👈 Construye la clave
                       if (e[confirmedKey] != null && e[confirmedKey] == 1) {
                         confirmed = true;
                       }
-                      
+
                       return Opacity(
                         opacity: confirmed ? 0.4 : 1.0,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: confirmed ? null : () =>  // Si el día esta confirmado lo inhabilitamos
-                              onCheckTapped(e, dia), // Notificamos el click
+                          onTap: confirmed
+                              ? null
+                              : () => // Si el día esta confirmado lo inhabilitamos
+                                  onCheckTapped(e, dia), // Notificamos el click
                           child: Container(
                             margin: const EdgeInsets.only(left: 6),
                             width:
@@ -250,7 +259,8 @@ class ListaEstudiantesWidget extends StatelessWidget {
                                 width: 1.5,
                               ),
                               color: asistio
-                                  ? const Color(0XFF18a34c).withValues(alpha: 0.1)
+                                  ? const Color(0XFF18a34c)
+                                      .withValues(alpha: 0.1)
                                   : Colors.transparent,
                             ),
                             child: Icon(
@@ -297,7 +307,6 @@ class ListaEstudiantesWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: dias.map((dia) {
-
                     // VALIDACIÓN: Verificamos si CADA estudiante tiene ese día confirmado
                     // .every devuelve true solo si todos cumplen la condición
                     final String keyConfirmacion = "confirmed_${dia['dia']}";
@@ -312,7 +321,7 @@ class ListaEstudiantesWidget extends StatelessWidget {
 
                     return GestureDetector(
                       onTap: () {
-                        String action = "CONFIRMAR_DIA"; 
+                        String action = "CONFIRMAR_DIA";
                         if (isConfirmed) {
                           action = "DESCONFIRMAR_DIA";
                         }

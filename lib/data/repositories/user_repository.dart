@@ -21,8 +21,8 @@ class UserRepository {
 
   String encryptPassword(String password) {
     var bytes = utf8.encode(password); // Convierte el texto a bytes
-    var digest = sha1.convert(bytes);  // Genera el hash SHA-1
-    return digest.toString();          // Retorna el hash en String
+    var digest = sha1.convert(bytes); // Genera el hash SHA-1
+    return digest.toString(); // Retorna el hash en String
   }
 
   // Descarga los usuarios de la API y los inserta en la DB local
@@ -36,16 +36,14 @@ class UserRepository {
 
   Future<bool> tieneAsistenciaPendiente() async {
     final db = await dbHelper.database;
-    final result = await db.rawQuery(
-      'SELECT COUNT(*) as total FROM asistencia_det'
-    );
+    final result =
+        await db.rawQuery('SELECT COUNT(*) as total FROM asistencia_det');
     final total = Sqflite.firstIntValue(result) ?? 0;
     return total > 0;
   }
 
   Future<String?> getTenantDomain(String email) async {
     try {
-      // La URL de tu archivo PHP puro en el servidor central
       final url = Uri.parse('https://infopae.com.co/api/check_tenant.php');
 
       final response = await http.post(
@@ -58,28 +56,22 @@ class UserRepository {
 
         if (data['status'] == 'success') {
           final String dominio = data['dominio'];
-          
+
           // Guardamos el dominio de forma permanente
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('api_url', dominio);
-          
+
           return dominio;
         }
       }
       return null; // Si el usuario no existe o hay error
     } catch (e) {
-
       return null;
     }
   }
 
-  Future<String> getCurrentWeek() async {
+  Future<String?> getCurrentWeek() async {
     final String? currentWeek = await apiProvider.getCurrentWeek();
-    if (currentWeek != null) {
-      return currentWeek;
-    }else {
-      return '';
-    }
+    return currentWeek;
   }
 }
-

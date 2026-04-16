@@ -9,12 +9,17 @@ class EnviarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Sincronización")),
+      appBar: AppBar(
+        title: const Text("Sincronización"),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: BlocConsumer<DownloadCubit, DownloadState>(
         listener: (context, state) {
           if (state is DownloadSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("¡Datos actualizados!"), backgroundColor: Colors.green),
+              const SnackBar(
+                  content: Text("¡Datos actualizados!"),
+                  backgroundColor: Colors.green),
             );
           }
         },
@@ -24,7 +29,8 @@ class EnviarPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.cloud_download_rounded, size: 80, color: Color(0XFF18a34c)),
+                const Icon(Icons.cloud_download_rounded,
+                    size: 80, color: Color(0XFF18a34c)),
                 const SizedBox(height: 20),
                 const Text(
                   "Descargando Información",
@@ -37,7 +43,7 @@ class EnviarPage extends StatelessWidget {
                   style: TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // BARRA DE CARGA
                 if (state is DownloadInProgress) ...[
                   LinearProgressIndicator(
@@ -52,10 +58,12 @@ class EnviarPage extends StatelessWidget {
 
                 if (state is DownloadInitial || state is DownloadFailure)
                   ElevatedButton.icon(
-                    onPressed: () => context.read<DownloadCubit>().iniciarDescarga(),
+                    onPressed: () =>
+                        context.read<DownloadCubit>().iniciarDescarga(),
                     icon: const Icon(Icons.sync),
                     label: const Text("Iniciar Descarga"),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0XFF18a34c)),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0XFF18a34c)),
                   ),
               ],
             ),

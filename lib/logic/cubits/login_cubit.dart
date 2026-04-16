@@ -28,8 +28,9 @@ class LoginError extends LoginState {
 class LoginCubit extends Cubit<LoginState> {
   final UserRepository repository;
 
-    // Helper para validar cambio de usuario
-  Future<bool> _validarCambioUsuario(String username, SharedPreferences prefs) async {
+  // Helper para validar cambio de usuario
+  Future<bool> _validarCambioUsuario(
+      String username, SharedPreferences prefs) async {
     final ultimoUsuario = prefs.getString('ultimo_usuario') ?? '';
     if (ultimoUsuario.isNotEmpty && ultimoUsuario != username) {
       final tienePendientes = await repository.tieneAsistenciaPendiente();
@@ -43,7 +44,7 @@ class LoginCubit extends Cubit<LoginState> {
     await prefs.setString('user_nombre', user.nombre);
     await prefs.setString('user_foto', user.foto ?? '');
     await prefs.setString('user_id', user.id.toString());
-    await prefs.setString('ultimo_usuario', user.nombre); // 👈 Guarda el último usuario
+    await prefs.setString('ultimo_usuario', user.email);
     final hoy = DateTime.now().toIso8601String().substring(0, 10);
     await prefs.setString('session_date', hoy);
   }
@@ -70,7 +71,13 @@ class LoginCubit extends Cubit<LoginState> {
         return;
       }
 
-      final String currentWeek = await repository.getCurrentWeek();
+      final String? currentWeek = await repository.getCurrentWeek();
+      print(" current week linea 75 $currentWeek");
+      if (currentWeek == null) {
+        emit(LoginError(
+            "No se encontró una semana configurada en el día actual"));
+        return;
+      }
       await prefs.setString('current_week', currentWeek);
 
       // Llegados a este punto sabemos el dominio por ejemplo: https://infopaegiron.com/2026/demo/app
@@ -80,9 +87,8 @@ class LoginCubit extends Cubit<LoginState> {
         final bloquear = await _validarCambioUsuario(username, prefs);
         if (bloquear) {
           emit(LoginUsuarioDiferente(
-            "Este equipo tiene un proceso de toma de asistencia activo. "
-            "Debes finalizar o sincronizar antes de cambiar de usuario."
-          ));
+              "Este equipo tiene un proceso de toma de asistencia activo. "
+              "Debes finalizar o sincronizar antes de cambiar de usuario."));
           return;
         }
         await _guardarSesion(user, prefs);
@@ -97,9 +103,8 @@ class LoginCubit extends Cubit<LoginState> {
           final bloquear = await _validarCambioUsuario(username, prefs);
           if (bloquear) {
             emit(LoginUsuarioDiferente(
-              "Este equipo tiene un proceso de toma de asistencia activo. "
-              "Debes finalizar o sincronizar antes de cambiar de usuario."
-            ));
+                "Este equipo tiene un proceso de toma de asistencia activo. "
+                "Debes finalizar o sincronizar antes de cambiar de usuario."));
             return;
           }
           await _guardarSesion(newUser, prefs);
